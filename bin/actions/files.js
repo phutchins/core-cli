@@ -120,13 +120,13 @@ module.exports.upload = function(bucket, filepath, env) {
     var parsedFileArray = globule.find(origFilepath);
     if (storj.utils.existsSync(parsedFileArray[0])) {
       if (fs.statSync(parsedFileArray[0]).isFile() === true) {
+        try {
+          fs.accessSync(parsedFileArray[0], fs.R_OK);
+        } catch (err) {
+          return log('error', err.message);
+        }
+        
         expandedFilepaths = expandedFilepaths.concat(parsedFileArray);
-      }
-
-      try {
-        fs.accessSync(parsedFileArray[0], fs.R_OK);
-      } catch (err) {
-        return log('error', err.message);
       }
     } else {
       return log('error', '%s could not be found', origFilepath);
