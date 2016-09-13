@@ -1,0 +1,70 @@
+{
+  "name": "storj-cli",
+  "version": "1.0.0",
+  "description": "implementation of the storj protocol for node.js and the browser",
+  "main": "index.js",
+  "directories": {
+    "test": "test",
+    "bin": "bin"
+  },
+  "bin": {
+    "storj": "bin/storj.js"
+  },
+  "scripts": {
+    "test": "npm run testsuite && npm run linter",
+    "testsuite": "STORJ_ALLOW_LOOPBACK=1 ./node_modules/.bin/mocha test/** --recursive",
+    "coverage": "STORJ_ALLOW_LOOPBACK=1 ./node_modules/.bin/istanbul cover ./node_modules/.bin/_mocha -- --recursive",
+    "linter": "./node_modules/.bin/jshint --config .jshintrc ./index.js ./lib ./test",
+    "build": "./node_modules/.bin/browserify index.js -s storj -o dist/storj.browser.js",
+    "make-docs": "mkdir -p ./jsdoc && rm -r ./jsdoc && ./node_modules/.bin/jsdoc index.js lib -r -R README.md -u ./doc -c .jsdoc.json --verbose -d ./jsdoc && cp -r doc/assets jsdoc/assets",
+    "publish-docs": "npm run make-docs && node script/publishdoc.js"
+  },
+  "keywords": [
+    "storj",
+    "p2p"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/storj/core-cli.git"
+  },
+  "author": "Gordon Hall <gordon@gordonwritescode.com>",
+  "contributors": [
+    {
+      "name": "littleskunk",
+      "url": "https://github.com/littleskunk"
+    },
+    {
+      "name": "Ryan Foran",
+      "url": "https://github.com/mrfancymonocle"
+    },
+    {
+      "name": "Philip Hutchins",
+      "url": "https://github.com/phutchins"
+    },
+    {
+      "name": "Allen Haim",
+      "url": "https://github.com/misterfish"
+    },
+    {
+      "name": "Alex Leitner",
+      "url": "https://github.com/aleitner"
+    }
+  ],
+  "license": "(AGPL-3.0 AND LGPL-3.0)",
+  "engines": {
+    "node": "^4.4.4"
+  },
+  "dependencies": {
+    "storj": "^3.1.1",
+    "async": "^1.5.2",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "globule": "^1.0.0",
+    "json-stable-stringify": "^1.0.1",
+    "merge": "^1.2.0",
+    "prompt": "^1.0.0",
+    "rimraf": "^2.5.3",
+    "through": "^2.3.8",
+    "tmp": "0.0.28"
+  }
+}
