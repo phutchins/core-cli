@@ -1,10 +1,10 @@
-[![Storj](https://nodei.co/npm/storj.png?downloads=true)](http://storj.github.io/core)
+[![Storj-cli](https://nodei.co/npm/storj.png?downloads=true)](http://storj.github.io/core-cli)
 ==============
 
-[![Build Status](https://img.shields.io/travis/Storj/core.svg?style=flat-square)](https://travis-ci.org/Storj/core)
-[![Coverage Status](https://img.shields.io/coveralls/Storj/core.svg?style=flat-square)](https://coveralls.io/r/Storj/core)
-[![NPM](https://img.shields.io/npm/v/storj.svg?style=flat-square)](https://www.npmjs.com/package/storj)
-[![License](https://img.shields.io/badge/license-AGPL3.0-blue.svg?style=flat-square)](https://raw.githubusercontent.com/Storj/core/master/LICENSE)
+[![Build Status](https://img.shields.io/travis/Storj/core-cli.svg?style=flat-square)](https://travis-ci.org/Storj/core-cli)
+[![Coverage Status](https://img.shields.io/coveralls/Storj/core-cli.svg?style=flat-square)](https://coveralls.io/r/Storj/core-cli)
+[![NPM](https://img.shields.io/npm/v/storj.svg?style=flat-square)](https://www.npmjs.com/package/storj-cli)
+[![License](https://img.shields.io/badge/license-AGPL3.0-blue.svg?style=flat-square)](https://raw.githubusercontent.com/Storj/core-cli/master/LICENSE)
 
 This package exposes a module that provides all of the tools needed to
 integrate with the Storj network. You must have Node.js v4.x.x, Python v2.x.x,
@@ -16,7 +16,7 @@ Quick Start (Command Line Interface)
 Install *globally* as user with NPM:
 
 ```
-npm install storj --global
+npm install storj-cli --global
 ```
 
 Use the linked command line interface:
@@ -36,7 +36,7 @@ Installation and Guides
 License
 -------
 
-Storj Core - Implementation of the Storj protocol for Node.js
+Storj Core cli - Implementation of the Storj protocol for Node.js
 Copyright (C) 2016  Storj Labs, Inc
 
 This program is free software: you can redistribute it and/or modify

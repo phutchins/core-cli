@@ -36,6 +36,9 @@ program._storj.loglevel = function() {
 };
 
 program._storj.PrivateClient = function(options) {
+  if (typeof options === 'undefined') {
+    options = {};
+  }
   options.blacklistFolder = DATADIR;
 
   return storj.BridgeClient(program.url, merge({
