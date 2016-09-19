@@ -9,7 +9,7 @@ var platform = os.platform();
 var path = require('path');
 var prompt = require('prompt');
 var colors = require('colors/safe');
-var storj = require('storj');
+var storj = require('storj-lib');
 var merge = require('merge');
 var logger = require('./logger');
 var log = logger().log;
@@ -43,7 +43,7 @@ program._storj.PrivateClient = function(options) {
   options.blacklistFolder = DATADIR;
 
   return storj.BridgeClient(program.url, merge({
-    keypair: utils.loadKeyPair(),
+    keyPair: utils.loadKeyPair(),
     logger: logger(program._storj.loglevel()).log
   }, options));
 };

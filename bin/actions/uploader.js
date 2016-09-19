@@ -6,8 +6,7 @@ var path = require('path');
 var storj = require('../..');
 var globule = require('globule');
 var async = require('async');
-var files = require('./files');
-var storj = require('storj');
+var storj = require('storj-lib');
 var assert = require('assert');
 
 /**
@@ -33,7 +32,7 @@ function Uploader(client, keypass, options) {
   this.fileConcurrency = options.env.fileconcurrency || 1;
   this.bucket = options.bucket;
   this.redundancy = options.env.redundancy || 0;
-  this.client = client({ concurrency: this.shardConcurrency});
+  this.client = client({ transferConcurrency: this.shardConcurrency});
   this.keypass = keypass();
   this.filepaths = this._getAllFiles(options.filepath);
   this.fileCount = this.filepaths.length;
