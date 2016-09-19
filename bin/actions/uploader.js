@@ -39,6 +39,7 @@ function Uploader(client, keypass, options) {
   this.fileCount = this.filepaths.length;
   this.uploadedCount = 0;
   this.fileMeta = [];
+  this.env = options.env;
 
   this._validate();
 
@@ -283,7 +284,9 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
 
       if (self.redundancy) {
         return files.mirror.call(
-          self,
+          { _storj: {PrivateClient: function() {
+            return self.client;
+          }}},
           self.bucket,
           file.id,
           self.env
