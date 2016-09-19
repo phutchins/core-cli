@@ -4,7 +4,8 @@
 
 var program = require('commander');
 var fs = require('fs');
-var platform = require('os').platform();
+var os = require('os');
+var platform = os.platform();
 var path = require('path');
 var prompt = require('prompt');
 var colors = require('colors/safe');
@@ -66,6 +67,29 @@ var ACTIONS = {
       command
     );
     program.help();
+  },
+  upload: function(bucket, filepath, env) {
+    var options = {
+      bucket: bucket,
+      filepath: filepath,
+      env: env
+    };
+
+    try {
+      var uploader = new actions.Uploader(
+        program._storj.PrivateClient,
+        program._storj.getKeyPass,
+        options
+      );
+    } catch(err) {
+      return log('error', err.message);
+    }
+
+    uploader.start(function(err, filepath) {
+      if (err) {
+        return log('error', err.message);
+      }
+    });
   }
 };
 
@@ -82,7 +106,9 @@ program
 program
   .command('login')
   .description('authorize this device to access your storj api account')
-  .action(actions.account.login.bind(null, program.url));
+  .action(function() {
+    actions.account.login(program.url);
+  });
 
 program
   .command('logout')
@@ -189,7 +215,7 @@ program
                '  <filepath> can be a path with wildcard or a space separated' +
                ' list of files.'
              )
-  .action(actions.files.upload.bind(program));
+  .action(ACTIONS.upload);
 
 program
   .command('create-mirrors <bucket-id> <file-id>')
