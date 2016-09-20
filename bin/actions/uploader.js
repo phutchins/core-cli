@@ -334,9 +334,10 @@ Uploader.prototype._mirror = function(fileid) {
       }
 
       replicas.forEach(function(shard) {
-        log('info', 'Shard %s mirrored by %s nodes', [
+        log('info', 'Shard %s %s mirroring by %s nodes', [
           shard.hash,
-          shard.mirrors.length
+          shard.status,
+          shard.mirrors
         ]);
       });
 

@@ -96,7 +96,6 @@ module.exports.mirror = function(bucket, file, env) {
     'Establishing %s mirrors per shard for redundancy',
     [env.redundancy]
   );
-  log('info', 'This can take a while, so grab a cocktail...');
   client.replicateFileFromBucket(
     bucket,
     file,
@@ -107,9 +106,10 @@ module.exports.mirror = function(bucket, file, env) {
       }
 
       replicas.forEach(function(shard) {
-        log('info', 'Shard %s mirrored by %s nodes', [
+        log('info', 'Shard %s %s mirroring by %s nodes', [
           shard.hash,
-          shard.mirrors.length
+          shard.status,
+          shard.mirrors
         ]);
       });
 
