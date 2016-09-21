@@ -5,25 +5,33 @@ var fs = require('fs');
 var path = require('path');
 var through = require('through');
 var storj = require('storj-lib');
+var globule = require('globule');
+var async = require('async');
 
-module.exports.list = function(bucketid) {
+module.exports.list = function(bucketRef) {
   var client = this._storj.PrivateClient();
 
-  client.listFilesInBucket(bucketid, function(err, files) {
+  utils.resolveBucketRef.call(client, bucketRef, function(err, bucketid) {
     if (err) {
       return log('error', err.message);
     }
 
-    if (!files.length) {
-      return log('warn', 'There are no files in this bucket.');
-    }
+    client.listFilesInBucket(bucketid, function(err, files) {
+      if (err) {
+        return log('error', err.message);
+      }
 
-    files.forEach(function(file) {
-      log(
-        'info',
-        'Name: %s, Type: %s, Size: %s bytes, ID: %s',
-        [file.filename, file.mimetype, file.size, file.id]
-      );
+      if (!files.length) {
+        return log('warn', 'There are no files in this bucket.');
+      }
+
+      files.forEach(function(file) {
+        log(
+          'info',
+          'Name: %s, Type: %s, Size: %s bytes, ID: %s',
+          [file.filename, file.mimetype, file.size, file.id]
+        );
+      });
     });
   });
 };
@@ -55,18 +63,16 @@ module.exports.remove = function(id, fileId, env) {
   destroyFile();
 };
 
+
 module.exports.mirror = function(bucket, file, env) {
   var client = this._storj.PrivateClient();
-
-  if (parseInt(env.redundancy) > 12 || parseInt(env.redundancy) < 1) {
-    return log('error', '%s is an invalid Redundancy value.', env.redundancy);
-  }
 
   log(
     'info',
     'Establishing %s mirrors per shard for redundancy',
     [env.redundancy]
   );
+  log('info', 'This can take a while, so grab a cocktail...');
   client.replicateFileFromBucket(
     bucket,
     file,
@@ -77,10 +83,9 @@ module.exports.mirror = function(bucket, file, env) {
       }
 
       replicas.forEach(function(shard) {
-        log('info', 'Shard %s %s mirroring by %s nodes', [
+        log('info', 'Shard %s mirrored by %s nodes', [
           shard.hash,
-          shard.status,
-          shard.mirrors
+          shard.mirrors.length
         ]);
       });
 
