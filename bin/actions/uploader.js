@@ -8,6 +8,7 @@ var async = require('async');
 var storj = require('storj-lib');
 var assert = require('assert');
 var monitor = require('os-monitor');
+var sutils = require('storj-sugar').utils;
 
 /**
  * Interface for uploading files to Storj Network
@@ -31,7 +32,8 @@ function Uploader(client, keypass, options) {
                     parseInt(options.env.concurrency) :
                     6;
   this.fileConcurrency = options.env.fileconcurrency || 1;
-  this.bucket = options.bucket;
+  this.bucketRef = options.bucket;
+  this.bucketId = null;
   this.redundancy = options.env.redundancy || 0;
   this.client = client({ transferConcurrency: this.shardConcurrency});
   this.keypass = keypass();
@@ -194,6 +196,26 @@ Uploader.prototype._makeTempDir = function(filepath, callback) {
 };
 
 /**
+ * Resolve a id or name reference to a bucket
+ * @param {String} bucketRef - Reference to a bucket, name or id
+ */
+Uploader.prototype._resolveBucketRef = function(bucketRef, callback) {
+  var self = this;
+
+  sutils.resolveBucketRef.call(self.client, bucketRef, function(err, bucketId) {
+    if (err) {
+      self.callback(err, bucketRef);
+      log('error', 'Unable to resolve bucket reference');
+      return;
+    }
+
+    self.bucketId = bucketId;
+
+    self.callback(null, bucketId);
+  });
+};
+
+/**
  * encrypt the filepath
   * @param {String} filepath - file to be uploaded
  * @private
@@ -263,52 +285,64 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
 
   log('info', '[ %s ] Storing file, hang tight!', filename);
 
-  self.client.storeFileInBucket(
+  sutils.resolveBucketRef.call(
+    self.client,
     self.bucket,
-    token.token,
-    self.fileMeta[filepath].tmppath,
-    function(err, file) {
+    function(err, bucketId) {
       if (err) {
-        log(
-          'warn',
-          '[ %s ] Error occurred. Triggering cleanup...',
-          filename
-         );
-        callback(err, filepath);
-        return;
+        return console.log('Error resolving bucket name');
       }
 
-      self.keyring.set(file.id, self.fileMeta[filepath].secret);
-      self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
-      delete self.fileMeta[filepath];
+      log('info', 'Found bucket %s', bucketId);
 
-      log('info', '[ %s ] Encryption key saved to keyring.', filename);
-      log('info', '[ %s ] File successfully stored in bucket.', filename);
-      log(
-        'info',
-        'Name: %s, Type: %s, Size: %s bytes, ID: %s',
-        [file.filename, file.mimetype, file.size, file.id]
+      self.client.storeFileInBucket(
+        bucketId,
+        token.token,
+        self.fileMeta[filepath].tmppath,
+        function(err, file) {
+          if (err) {
+            log(
+              'warn',
+              '[ %s ] Error occurred. Triggering cleanup...',
+              filename
+             );
+            self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
+            callback(err, filepath);
+            return;
+          }
+
+          self.keyring.set(file.id, self.fileMeta[filepath].secret);
+          self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
+          delete self.fileMeta[filepath];
+
+          log('info', '[ %s ] Encryption key saved to keyring.', filename);
+          log('info', '[ %s ] File successfully stored in bucket.', filename);
+          log(
+            'info',
+            'Name: %s, Type: %s, Size: %s bytes, ID: %s',
+            [file.filename, file.mimetype, file.size, file.id]
+          );
+
+          if (self.redundancy && self.redundancy > 0) {
+            return self._mirror(file.id);
+          }
+
+          self.uploadedCount++;
+
+          log(
+            'info',
+            '%s of %s files uploaded',
+            [ self.uploadedCount, self.fileCount ]
+          );
+
+          if (self.uploadedCount === self.fileCount) {
+            log( 'info', 'Done.');
+            callback(null, filepath);
+          }
+
+          self.nextFileCallback[filepath]();
+        }
       );
-
-      if (self.redundancy && self.redundancy > 0) {
-        return self._mirror(file.id);
-      }
-
-      self.uploadedCount++;
-
-      log(
-        'info',
-        '%s of %s files uploaded',
-        [ self.uploadedCount, self.fileCount ]
-      );
-
-      if (self.uploadedCount === self.fileCount) {
-        log( 'info', 'Done.');
-        callback(null, filepath);
-      }
-
-      self.nextFileCallback[filepath]();
-
     }
   );
 };
