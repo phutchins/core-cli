@@ -1,6 +1,6 @@
 {
   "name": "storj-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "implementation of the storj protocol for node.js and the browser",
   "main": "bin/index.js",
   "directories": {
@@ -30,7 +30,7 @@
     "node": "^4.4.4"
   },
   "dependencies": {
-    "storj-lib": "4.0.0-rc.4",
+    "storj-lib": "4.0.0-rc.5",
     "async": "^1.5.2",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
