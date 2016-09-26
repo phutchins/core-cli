@@ -30,6 +30,7 @@ module.exports.list = function(bucketid) {
 
 module.exports.getInfo = function(bucketid, fileid, callback) {
   var client = this._storj.PrivateClient();
+  var fileMatch = null;
 
   client.listFilesInBucket(bucketid, function(err, files) {
     if (err) {
@@ -49,11 +50,11 @@ module.exports.getInfo = function(bucketid, fileid, callback) {
           'Name: %s, Type: %s, Size: %s bytes, ID: %s',
           [file.filename, file.mimetype, file.size, file.id]
         );
-        return callback(file);
+        fileMatch = file;
       }
     });
 
-    return callback(null);
+    return callback(fileMatch);
   });
 };
 
