@@ -253,7 +253,7 @@ program
   .command('download-file <bucket-id> <file-id> <filepath>')
   .option('-x, --exclude <nodeID,nodeID...>', 'mirrors to create for file', '')
   .description('download a file from the network with a pointer from a bucket')
-  .action(actions.download);
+  .action(ACTIONS.download);
 
 program
   .command('generate-key')

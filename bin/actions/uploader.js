@@ -3,7 +3,6 @@ var log = require('./../logger')().log;
 var utils = require('./../utils');
 var fs = require('fs');
 var path = require('path');
-var storj = require('../..');
 var globule = require('globule');
 var async = require('async');
 var storj = require('storj-lib');
