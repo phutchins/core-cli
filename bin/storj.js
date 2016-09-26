@@ -74,9 +74,10 @@ var ACTIONS = {
       filepath: filepath,
       env: env
     };
+    var uploader;
 
     try {
-      var uploader = new actions.Uploader(
+      uploader = new actions.Uploader(
         program._storj.PrivateClient,
         program._storj.getKeyPass,
         options
@@ -85,7 +86,32 @@ var ACTIONS = {
       return log('error', err.message);
     }
 
-    uploader.start(function(err, filepath) {
+    uploader.start(function(err) {
+      if (err) {
+        return log('error', err.message);
+      }
+    });
+  },
+  download: function(bucket, id, filepath, env) {
+    var options = {
+      bucket: bucket,
+      fileid: id,
+      filepath: filepath,
+      env: env
+    };
+    var downloader;
+
+    try {
+      downloader = new actions.Downloader(
+        program._storj.PrivateClient,
+        program._storj.getKeyPass,
+        options
+      );
+    } catch(err) {
+      return log('error', err.message);
+    }
+
+    downloader.start(function(err) {
       if (err) {
         return log('error', err.message);
       }
@@ -227,7 +253,7 @@ program
   .command('download-file <bucket-id> <file-id> <filepath>')
   .option('-x, --exclude <nodeID,nodeID...>', 'mirrors to create for file', '')
   .description('download a file from the network with a pointer from a bucket')
-  .action(actions.files.download.bind(program));
+  .action(actions.download);
 
 program
   .command('generate-key')
