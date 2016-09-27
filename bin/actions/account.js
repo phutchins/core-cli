@@ -22,10 +22,7 @@ module.exports.getInfo =  function() {
      log('info', 'Description:       %s', [info.info.description]);
      log('info', 'Version:           %s', [info.info.version]);
      log('info', 'Host:              %s', [info.host]);
-     info.info['x-network-seeds'].forEach(function(seed, i) {
-       log('info', 'Network Seed (%s):  %s', [i, seed]);
-     });
-   });
+  });
 };
 
 module.exports.register = function() {
