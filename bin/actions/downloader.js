@@ -96,7 +96,7 @@ Downloader.prototype._getInfo = function(callback) {
  */
 Downloader.prototype._determineSaveLocation = function(callback) {
   if (this.fileMeta === null) {
-    callback(
+    return callback(
       new Error(
         'file ' + this.fileid + ' does not exist in bucket ' + this.bucket
       )
@@ -120,11 +120,11 @@ Downloader.prototype._determineSaveLocation = function(callback) {
       this.destination = this.filepath;
     }
   } else if (this.filepath.slice(-1) === path.sep) {
-    callback(new Error(this.filepath + ' is not an existing folder'));
+    return callback(new Error(this.filepath + ' is not an existing folder'));
   } else {
     this.destination = this.filepath;
   }
-  callback(null);
+  return callback(null);
 };
 
 /**
@@ -136,8 +136,7 @@ Downloader.prototype._getKeyRing = function(callback) {
 
   utils.getKeyRing(this.keypass, function(keyring) {
     self.keyring = keyring;
-    callback(null);
-    return;
+    return callback(null);
   });
 };
 
@@ -153,7 +152,7 @@ Downloader.prototype._createFileStream = function(callback) {
     log('info', 'File downloaded and written to %s.', [self.destination]);
     self.finalCallback(null, self.destination);
   }).on('error', function(err) {
-    callback(err);
+    return callback(err);
   });
 
   this.client.createFileStream(
@@ -184,7 +183,7 @@ Downloader.prototype._handleFileStream = function(stream, callback) {
     log('warn', 'Failed to download shard, reason: %s', [err.message]);
     fs.unlink(this.destination, function(unlinkFailed) {
       if (unlinkFailed) {
-        callback(new Error('Failed to unlink partial file.'));
+        return callback(new Error('Failed to unlink partial file.'));
       }
 
       if (!err.pointer) {
