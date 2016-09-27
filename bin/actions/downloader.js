@@ -8,6 +8,17 @@ var assert = require('assert');
 var async = require('async');
 var through = require('through');
 
+/**
+ * Interface for downloading files from the Storj Network
+ * @constructor
+ * @license AGPL-3.0
+ * @param {BridgeClient} client - Authenticated Bridge Client with Storj API.
+ * @param {String} keypass - Password for unlocking keyring.
+ * @param {String} options.bucket - Bucket files are uploaded to.
+ * @param {String} options.fileid - File id listed in bucket
+ * @param {String} options.env.exclude - Nodes to exclude when downloading.
+ * @param {String} options.filepath - Path of files being uploaded.
+ */
 function Downloader(client, keypass, options) {
   if (!(this instanceof Downloader)) {
     return new Downloader(client, keypass, options);
@@ -24,6 +35,10 @@ function Downloader(client, keypass, options) {
   this._validate();
 }
 
+/**
+ * Validate everything required was passed to the constructor
+ * @private
+ */
 Downloader.prototype._validate = function() {
   // Don't overwrite a file that already exists
   if (storj.utils.existsSync(this.filepath)) {
@@ -48,13 +63,16 @@ Downloader.prototype._validate = function() {
   }
 };
 
-
+/**
+ *  Get file metadata from bridge
+ * @private
+ */
 Downloader.prototype._getInfo = function(callback) {
   var self = this;
 
   this.client.listFilesInBucket(this.bucket, function(err, files) {
     if (err) {
-      callback(err);
+      return callback(err);
     }
 
     files.forEach(function(file) {
@@ -72,6 +90,10 @@ Downloader.prototype._getInfo = function(callback) {
   });
 };
 
+/**
+ * Determine if the filepath given was a folder or a file name
+ * @private
+ */
 Downloader.prototype._determineSaveLocation = function(callback) {
   if (this.fileMeta === null) {
     callback(
@@ -120,7 +142,7 @@ Downloader.prototype._getKeyRing = function(callback) {
 };
 
 /**
- * set this.keyring using this.keypass
+ * Create file stream for downloading file
  * @private
  */
 Downloader.prototype._createFileStream = function(callback) {
@@ -129,6 +151,7 @@ Downloader.prototype._createFileStream = function(callback) {
 
   this.target.on('finish', function() {
     log('info', 'File downloaded and written to %s.', [self.destination]);
+    self.finalCallback(null, self.destination);
   }).on('error', function(err) {
     callback(err);
   });
@@ -141,6 +164,11 @@ Downloader.prototype._createFileStream = function(callback) {
   );
 };
 
+/**
+ * Handle the file stream
+ * @param stream - filestream
+ * @private
+ */
 Downloader.prototype._handleFileStream = function(stream, callback) {
   var self = this;
   var received = 0;
@@ -175,6 +203,10 @@ Downloader.prototype._handleFileStream = function(stream, callback) {
   })).pipe(decrypter).pipe(this.target);
 };
 
+/**
+ * Aggregator function for complete download process.
+ * @param {Function} finalCallback - function for handling errors and when done.
+ */
 Downloader.prototype.start = function(finalCallback) {
   var self = this;
   this.finalCallback = finalCallback;
@@ -196,6 +228,13 @@ Downloader.prototype.start = function(finalCallback) {
       self._handleFileStream(stream, callback);
     }
   ], function (err, filepath) {
+    if (err) {
+      var file = (self.destination) ? self.destination : self.filepath;
+      if (storj.utils.existsSync(file)) {
+        log('info', 'Removing unfinished file: %s', self.destination);
+        fs.unlinkSync(file);
+      }
+    }
     finalCallback(err, filepath);
   });
 
