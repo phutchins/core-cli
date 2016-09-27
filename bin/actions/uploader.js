@@ -152,7 +152,7 @@ Uploader.prototype._loopThroughFiles = function(callback) {
 
       self.nextFileCallback = nextFileCallback;
 
-      callback(null, filepath);
+      return callback(null, filepath);
     }
   );
 };
@@ -186,7 +186,7 @@ Uploader.prototype._makeTempDir = function(filepath, callback) {
       encrypter: new storj.EncryptStream(secret)
     };
 
-    callback(null, filepath);
+    return callback(null, filepath);
   });
 };
 
@@ -207,7 +207,7 @@ Uploader.prototype._createReadStream = function(filepath, callback) {
         '[ %s ] Encryption complete',
         self.fileMeta[filepath].filename
       );
-      callback(null, filepath);
+      return callback(null, filepath);
   });
 };
 
@@ -241,7 +241,7 @@ Uploader.prototype._createToken = function(filepath, callback) {
         return;
       }
 
-      callback(null, filepath, token);
+      return callback(null, filepath, token);
     });
   }
 
@@ -272,8 +272,7 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
           filename
          );
         self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
-        callback(err, filepath);
-        return;
+        return callback(err, filepath);
       }
 
       self.keyring.set(file.id, self.fileMeta[filepath].secret);
@@ -301,11 +300,10 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
 
       if (self.uploadedCount === self.fileCount) {
         log( 'info', 'Done.');
-        callback(null, filepath);
+        return callback(null, filepath);
       }
 
-      self.nextFileCallback();
-
+      return self.nextFileCallback();
     }
   );
 };
