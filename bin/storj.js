@@ -88,7 +88,8 @@ var ACTIONS = {
 
     uploader.start(function(err) {
       if (err) {
-        return log('error', err.message);
+        log('error', err.message);
+        process.exit(1);
       }
     });
   },
@@ -113,7 +114,8 @@ var ACTIONS = {
 
     downloader.start(function(err) {
       if (err) {
-        return log('error', err.message);
+        log('error', err.message);
+        process.exit(1);
       }
     });
   }

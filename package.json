@@ -1,6 +1,6 @@
 {
   "name": "storj-cli",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "implementation of the storj protocol for node.js and the browser",
   "main": "bin/index.js",
   "directories": {
@@ -37,6 +37,7 @@
     "globule": "^1.0.0",
     "json-stable-stringify": "^1.0.1",
     "merge": "^1.2.0",
+    "os-monitor": "1.0.4",
     "prompt": "^1.0.0",
     "rimraf": "^2.5.3",
     "through": "^2.3.8",

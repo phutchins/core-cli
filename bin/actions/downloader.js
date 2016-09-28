@@ -193,7 +193,7 @@ Downloader.prototype._handleFileStream = function(stream, callback) {
       log('info', 'Retrying download from other mirrors...');
       var exclude = this.exclude.split(',');
       exclude.push(err.pointer.farmer.nodeID);
-      self.start(this.finalCallback);
+      self.start(self.finalCallback);
     });
   }).pipe(through(function(chunk) {
     received += chunk.length;
