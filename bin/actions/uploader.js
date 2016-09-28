@@ -7,6 +7,7 @@ var globule = require('globule');
 var async = require('async');
 var storj = require('storj-lib');
 var assert = require('assert');
+var monitor = require('os-monitor');
 
 /**
  * Interface for uploading files to Storj Network
@@ -20,6 +21,7 @@ var assert = require('assert');
  * @param {String} options.bucket - Bucket files are uploaded to.
  * @param {String} options.filepath - Path of files being uploaded.
  */
+  /* jshint maxstatements: 20 */
 function Uploader(client, keypass, options) {
   if (!(this instanceof Uploader)) {
     return new Uploader(client, keypass, options);
@@ -37,6 +39,7 @@ function Uploader(client, keypass, options) {
   this.fileCount = this.filepaths.length;
   this.uploadedCount = 0;
   this.fileMeta = [];
+  this.nextFileCallback = {};
 
   this._validate();
 
@@ -150,7 +153,7 @@ Uploader.prototype._loopThroughFiles = function(callback) {
         return;
       }
 
-      self.nextFileCallback = nextFileCallback;
+      self.nextFileCallback[filepath] = nextFileCallback;
 
       callback(null, filepath);
     }
@@ -271,13 +274,13 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
           '[ %s ] Error occurred. Triggering cleanup...',
           filename
          );
-        self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
         callback(err, filepath);
         return;
       }
 
       self.keyring.set(file.id, self.fileMeta[filepath].secret);
       self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
+      delete self.fileMeta[filepath];
 
       log('info', '[ %s ] Encryption key saved to keyring.', filename);
       log('info', '[ %s ] File successfully stored in bucket.', filename);
@@ -304,7 +307,7 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
         callback(null, filepath);
       }
 
-      self.nextFileCallback();
+      self.nextFileCallback[filepath]();
 
     }
   );
@@ -346,12 +349,40 @@ Uploader.prototype._mirror = function(fileid) {
 };
 
 /**
+ *
+ *
+ * @private
+ */
+Uploader.prototype._handleFailure = function() {
+  var self = this;
+  monitor.stop();
+  for (var file in self.fileMeta) {
+    self._cleanup(
+      self.fileMeta[file].filename,
+      self.fileMeta[file].tmpCleanup
+    );
+  }
+};
+
+/**
  * Aggregator function for complete upload process.
  * @param {Function} finalCallback - function for handling errors and when done.
  */
 Uploader.prototype.start = function(finalCallback) {
-
   var self = this;
+
+  monitor.start(
+    {
+      delay: 3000, // interval in ms between monitor cycles
+      freemem: 8000000 // freemem under which event 'freemem' is triggered
+    }
+  );
+
+  // define handler for a too low free memory
+  monitor.on('freemem', function(event) {
+    self._handleFailure();
+    return finalCallback(new Error('Not enough free memory to continue!'));
+  });
 
   async.waterfall([
     function _getKeyRing(callback) {
@@ -373,6 +404,7 @@ Uploader.prototype.start = function(finalCallback) {
       self._storeFileInBucket(filepath, token, callback);
     }
   ], function (err, filepath) {
+    self._handleFailure();
     finalCallback(err, filepath);
   });
 
