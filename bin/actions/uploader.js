@@ -379,7 +379,7 @@ Uploader.prototype.start = function(finalCallback) {
   );
 
   // define handler for a too low free memory
-  monitor.on('freemem', function(event) {
+  monitor.on('freemem', function() {
     self._handleFailure();
     return finalCallback(new Error('Not enough free memory to continue!'));
   });
