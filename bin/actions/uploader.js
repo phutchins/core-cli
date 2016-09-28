@@ -21,6 +21,7 @@ var monitor = require('os-monitor');
  * @param {String} options.bucket - Bucket files are uploaded to.
  * @param {String} options.filepath - Path of files being uploaded.
  */
+  /* jshint maxstatements: 20 */
 function Uploader(client, keypass, options) {
   if (!(this instanceof Uploader)) {
     return new Uploader(client, keypass, options);
@@ -273,7 +274,6 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
           '[ %s ] Error occurred. Triggering cleanup...',
           filename
          );
-        self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
         callback(err, filepath);
         return;
       }
