@@ -259,10 +259,11 @@ program
   .option('-c, --concurrency <count>', 'max shard upload concurrency')
   .option('-C, --fileconcurrency <count>', 'max file upload concurrency', 1)
   .option('-r, --redundancy <mirrors>', 'number of mirrors to create for file')
-  .description('upload a file or files to the network and track in a bucket')
-  .description('<bucket-id> can also be the bucket name')
-  .description('<filepath> can be a path with wildcard or a space separated')
-  .description('  list of files')
+  .description('upload a file or files to the network and track in a bucket' +
+               '<bucket-id> can also be the bucket name' +
+               '<filepath> can be a path with wildcard or a space separated' +
+               '  list of files'
+              )
   .action(ACTIONS.upload);
 
 program
@@ -276,9 +277,10 @@ program
   .command('download-file <bucket-id> <file-id> <filepath>')
   .alias('df')
   .option('-x, --exclude <nodeID,nodeID...>', 'mirrors to create for file', '')
-  .description('download a file from the network with a pointer from a bucket')
-  .description('<bucket-id> can also be the bucket name')
-  .description('<file-id> can also be the file name')
+  .description('download a file from the network with a pointer from a bucket' +
+               '<bucket-id> can also be the bucket name' +
+               '<file-id> can also be the file name'
+              )
   .action(ACTIONS.download);
 
 program
@@ -336,7 +338,7 @@ program
 program
   .command('reset-keyring')
   .alias('rsk')
-  .description('reset the keyring password')
+  .description('delete the current keyring and start a new one')
   .action(utils.resetkeyring.bind(program));
 
 program

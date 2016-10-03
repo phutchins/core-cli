@@ -67,12 +67,16 @@ module.exports.remove = function(id, fileId, env) {
 module.exports.mirror = function(bucket, file, env) {
   var client = this._storj.PrivateClient();
 
+  if (parseInt(env.redundancy) > 12 || parseInt(env.redundancy) < 1) {
+    return log('error', '%s is an invalid Redundancy value.', env.redundancy);
+  }
+
   log(
     'info',
     'Establishing %s mirrors per shard for redundancy',
     [env.redundancy]
   );
-  log('info', 'This can take a while, so grab a cocktail...');
+
   client.replicateFileFromBucket(
     bucket,
     file,
@@ -83,9 +87,10 @@ module.exports.mirror = function(bucket, file, env) {
       }
 
       replicas.forEach(function(shard) {
-        log('info', 'Shard %s mirrored by %s nodes', [
+        log('info', 'Shard %s %s mirroring by %s nodes', [
           shard.hash,
-          shard.mirrors.length
+          shard.status,
+          shard.mirrors
         ]);
       });
 

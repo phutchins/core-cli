@@ -33,7 +33,7 @@ function Uploader(client, keypass, options) {
                     6;
   this.fileConcurrency = options.env.fileconcurrency || 1;
   this.bucketRef = options.bucket;
-  this.bucketId = null;
+  this.bucketid = null;
   this.redundancy = options.env.redundancy || 0;
   this.client = client({ transferConcurrency: this.shardConcurrency});
   this.keypass = keypass();
@@ -205,13 +205,13 @@ Uploader.prototype._resolveBucketRef = function(filepath, callback) {
   sutils.resolveBucketRef.call(
     self.client,
     self.bucketRef,
-    function(err, bucketId) {
+    function(err, bucketid) {
       if (err) {
         log('error', 'Unable to resolve bucket reference');
         return;
       }
 
-      self.bucketId = bucketId;
+      self.bucketid = bucketid;
 
       callback(null, filepath);
     }
@@ -256,7 +256,7 @@ Uploader.prototype._createToken = function(filepath, callback) {
       [ filename, retry ]
     );
 
-    self.client.createToken(self.bucketId, 'PUSH', function(err, token) {
+    self.client.createToken(self.bucketid, 'PUSH', function(err, token) {
       if (err) {
 
         if (retry < 6) {
@@ -291,15 +291,15 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
   sutils.resolveBucketRef.call(
     self.client,
     self.bucketRef,
-    function(err, bucketId) {
+    function(err, bucketid) {
       if (err) {
         return console.log('Error resolving bucket name');
       }
 
-      log('info', 'Found bucket %s', bucketId);
+      log('info', 'Found bucket %s', bucketid);
 
       self.client.storeFileInBucket(
-        bucketId,
+        bucketid,
         token.token,
         self.fileMeta[filepath].tmppath,
         function(err, file) {
@@ -364,7 +364,7 @@ Uploader.prototype._mirror = function(fileid) {
   log('info', 'This can take a while, so grab a cocktail...');
 
   this.client.replicateFileFromBucket(
-    this.bucketId,
+    this.bucketid,
     fileid,
     parseInt(this.redundancy),
     function(err, replicas) {

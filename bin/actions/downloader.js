@@ -15,8 +15,8 @@ var sutils = require('storj-sugar').utils;
  * @license AGPL-3.0
  * @param {BridgeClient} client - Authenticated Bridge Client with Storj API.
  * @param {String} keypass - Password for unlocking keyring.
- * @param {String} options.bucket - Bucket files are uploaded to.
- * @param {String} options.fileid - File id listed in bucket
+ * @param {String} options.bucketRef - Bucket name or id files are uploaded to.
+ * @param {String} options.fileRef - File name or id listed in bucket
  * @param {String} options.env.exclude - Nodes to exclude when downloading.
  * @param {String} options.filepath - Path of files being uploaded.
  */
@@ -26,7 +26,7 @@ function Downloader(client, keypass, options) {
   }
 
   this.bucketRef = options.bucket;
-  this.bucketId = null;
+  this.bucketid = null;
   this.fileRef = options.fileid;
   this.fileid = null;
   this.filepath = options.filepath;
@@ -76,17 +76,17 @@ Downloader.prototype._resolveRefs = function(callback) {
   sutils.resolveBucketRef.call(
     self.client,
     self.bucketRef,
-    function(err, bucketId) {
+    function(err, bucketid) {
       if (err) {
         log('error', 'Unable to resolve bucket reference');
         return;
       }
 
-      self.bucketId = bucketId;
+      self.bucketid = bucketid;
 
       sutils.resolveFileRef.call(
         self.client,
-        self.bucketId,
+        self.bucketid,
         self.fileRef,
         function(err, fileid) {
           if (err) {
@@ -110,7 +110,7 @@ Downloader.prototype._resolveRefs = function(callback) {
 Downloader.prototype._getInfo = function(callback) {
   var self = this;
 
-  this.client.listFilesInBucket(this.bucketId, function(err, files) {
+  this.client.listFilesInBucket(this.bucketid, function(err, files) {
     if (err) {
       return callback(err);
     }
@@ -196,7 +196,7 @@ Downloader.prototype._createFileStream = function(callback) {
   });
 
   this.client.createFileStream(
-    this.bucketId,
+    this.bucketid,
     this.fileid,
     {exclude: this.exclude.split(',')},
     callback
