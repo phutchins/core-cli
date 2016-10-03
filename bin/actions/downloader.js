@@ -7,6 +7,7 @@ var storj = require('storj-lib');
 var assert = require('assert');
 var async = require('async');
 var through = require('through');
+var sutils = require('storj-sugar').utils;
 
 /**
  * Interface for downloading files from the Storj Network
@@ -24,8 +25,10 @@ function Downloader(client, keypass, options) {
     return new Downloader(client, keypass, options);
   }
 
-  this.bucket = options.bucket;
-  this.fileid = options.fileid;
+  this.bucketRef = options.bucket;
+  this.bucketId = null;
+  this.fileRef = options.fileid;
+  this.fileid = null;
   this.filepath = options.filepath;
   this.client = client();
   this.keypass = keypass();
@@ -64,13 +67,50 @@ Downloader.prototype._validate = function() {
 };
 
 /**
+ * Resolve a id or name reference to a bucket
+ * @param {String} bucketRef - Reference to a bucket, name or id
+ */
+Downloader.prototype._resolveRefs = function(callback) {
+  var self = this;
+
+  sutils.resolveBucketRef.call(
+    self.client,
+    self.bucketRef,
+    function(err, bucketId) {
+      if (err) {
+        log('error', 'Unable to resolve bucket reference');
+        return;
+      }
+
+      self.bucketId = bucketId;
+
+      sutils.resolveFileRef.call(
+        self.client,
+        self.bucketId,
+        self.fileRef,
+        function(err, fileid) {
+          if (err) {
+            log('error', 'Unable to resolve file reference');
+            return;
+          }
+
+          self.fileid = fileid;
+
+          callback(null);
+        }
+      );
+    }
+  );
+};
+
+/**
  *  Get file metadata from bridge
  * @private
  */
 Downloader.prototype._getInfo = function(callback) {
   var self = this;
 
-  this.client.listFilesInBucket(this.bucket, function(err, files) {
+  this.client.listFilesInBucket(this.bucketId, function(err, files) {
     if (err) {
       return callback(err);
     }
@@ -98,7 +138,7 @@ Downloader.prototype._determineSaveLocation = function(callback) {
   if (this.fileMeta === null) {
     return callback(
       new Error(
-        'file ' + this.fileid + ' does not exist in bucket ' + this.bucket
+        'file ' + this.fileid + ' does not exist in bucket ' + this.bucketRef
       )
     );
   }
@@ -156,7 +196,7 @@ Downloader.prototype._createFileStream = function(callback) {
   });
 
   this.client.createFileStream(
-    this.bucket,
+    this.bucketId,
     this.fileid,
     {exclude: this.exclude.split(',')},
     callback
@@ -211,6 +251,9 @@ Downloader.prototype.start = function(finalCallback) {
   this.finalCallback = finalCallback;
 
   async.waterfall([
+    function _resolveRefs(callabck) {
+      self._resolveRefs(callabck);
+    },
     function _getInfo(callback) {
       self._getInfo(callback);
     },

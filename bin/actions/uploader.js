@@ -19,7 +19,7 @@ var sutils = require('storj-sugar').utils;
  * @param {Number} options.env.concurrency - shard upload concurrency.
  * @param {Number} options.env.fileconcurrency - File upload concurrency.
  * @param {Number} options.env.redundancy - Number of mirrors per shard.
- * @param {String} options.bucket - Bucket files are uploaded to.
+ * @param {String} options.bucketRef - Bucket name or id files are uploaded to.
  * @param {String} options.filepath - Path of files being uploaded.
  */
   /* jshint maxstatements: 20 */
@@ -199,20 +199,23 @@ Uploader.prototype._makeTempDir = function(filepath, callback) {
  * Resolve a id or name reference to a bucket
  * @param {String} bucketRef - Reference to a bucket, name or id
  */
-Uploader.prototype._resolveBucketRef = function(bucketRef, callback) {
+Uploader.prototype._resolveBucketRef = function(filepath, callback) {
   var self = this;
 
-  sutils.resolveBucketRef.call(self.client, bucketRef, function(err, bucketId) {
-    if (err) {
-      self.callback(err, bucketRef);
-      log('error', 'Unable to resolve bucket reference');
-      return;
+  sutils.resolveBucketRef.call(
+    self.client,
+    self.bucketRef,
+    function(err, bucketId) {
+      if (err) {
+        log('error', 'Unable to resolve bucket reference');
+        return;
+      }
+
+      self.bucketId = bucketId;
+
+      callback(null, filepath);
     }
-
-    self.bucketId = bucketId;
-
-    self.callback(null, bucketId);
-  });
+  );
 };
 
 /**
@@ -253,7 +256,7 @@ Uploader.prototype._createToken = function(filepath, callback) {
       [ filename, retry ]
     );
 
-    self.client.createToken(self.bucket, 'PUSH', function(err, token) {
+    self.client.createToken(self.bucketId, 'PUSH', function(err, token) {
       if (err) {
 
         if (retry < 6) {
@@ -287,7 +290,7 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
 
   sutils.resolveBucketRef.call(
     self.client,
-    self.bucket,
+    self.bucketRef,
     function(err, bucketId) {
       if (err) {
         return console.log('Error resolving bucket name');
@@ -361,7 +364,7 @@ Uploader.prototype._mirror = function(fileid) {
   log('info', 'This can take a while, so grab a cocktail...');
 
   this.client.replicateFileFromBucket(
-    this.bucket,
+    this.bucketId,
     fileid,
     parseInt(this.redundancy),
     function(err, replicas) {
@@ -430,6 +433,9 @@ Uploader.prototype.start = function(finalCallback) {
     },
     function _createReadStream(filepath, callback) {
       self._createReadStream(filepath, callback);
+    },
+    function _resolveBucketRef(filepath, callback) {
+      self._resolveBucketRef(filepath, callback);
     },
     function _createToken(filepath, callback) {
       self._createToken(filepath, callback);
