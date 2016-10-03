@@ -63,7 +63,6 @@ module.exports.remove = function(id, fileId, env) {
   destroyFile();
 };
 
-
 module.exports.mirror = function(bucket, file, env) {
   var client = this._storj.PrivateClient();
 
