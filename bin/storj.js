@@ -260,6 +260,8 @@ program
   .option('-C, --fileconcurrency <count>', 'max file upload concurrency', 1)
   .option('-r, --redundancy <mirrors>', 'number of mirrors to create for file')
   .description('upload a file or files to the network and track in a bucket' +
+               '\n  upload all files in a single directory using "/path/*"\n' +
+               '  or upload recursively using "/path/**/*".\n' +
                '<bucket-id> can also be the bucket name' +
                '<filepath> can be a path with wildcard or a space separated' +
                '  list of files'
