@@ -7,11 +7,12 @@ var through = require('through');
 var storj = require('storj-lib');
 var globule = require('globule');
 var async = require('async');
+var sutils = require('storj-sugar').utils;
 
 module.exports.list = function(bucketRef) {
   var client = this._storj.PrivateClient();
 
-  utils.resolveBucketRef.call(client, bucketRef, function(err, bucketid) {
+  sutils.resolveBucketRef.call(client, bucketRef, function(err, bucketid) {
     if (err) {
       return log('error', err.message);
     }
