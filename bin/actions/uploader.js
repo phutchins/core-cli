@@ -207,8 +207,7 @@ Uploader.prototype._resolveBucketRef = function(filepath, callback) {
     self.bucketRef,
     function(err, bucketid) {
       if (err) {
-        log('error', 'Unable to resolve bucket reference');
-        return;
+        return callback(err);
       }
 
       self.bucketid = bucketid;

@@ -78,8 +78,7 @@ Downloader.prototype._resolveRefs = function(callback) {
     self.bucketRef,
     function(err, bucketid) {
       if (err) {
-        log('error', 'Unable to resolve bucket reference');
-        return;
+        return callback(err);
       }
 
       self.bucketid = bucketid;
@@ -90,8 +89,7 @@ Downloader.prototype._resolveRefs = function(callback) {
         self.fileRef,
         function(err, fileid) {
           if (err) {
-            log('error', 'Unable to resolve file reference');
-            return;
+            return callback(err);
           }
 
           self.fileid = fileid;
