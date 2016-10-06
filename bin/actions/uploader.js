@@ -33,7 +33,12 @@ function Uploader(client, keypass, options) {
   this.fileConcurrency = options.env.fileconcurrency || 1;
   this.bucket = options.bucket;
   this.redundancy = options.env.redundancy || 0;
-  this.client = client({ transferConcurrency: this.shardConcurrency});
+  this.client = client(
+    {
+      transferConcurrency: this.shardConcurrency,
+      requestTimeout: 3000
+    }
+  );
   this.keypass = keypass();
   this.filepaths = this._getAllFiles(options.filepath);
   this.fileCount = this.filepaths.length;
