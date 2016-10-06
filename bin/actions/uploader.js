@@ -204,6 +204,9 @@ Uploader.prototype._createReadStream = function(filepath, callback) {
   fs.createReadStream(filepath)
     .pipe(self.fileMeta[filepath].encrypter)
     .pipe(fs.createWriteStream(self.fileMeta[filepath].tmppath))
+    .on('error', function(err){
+      callback(err, filepath);
+    })
     .on('finish', function() {
       log(
         'info',
