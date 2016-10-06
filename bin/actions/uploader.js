@@ -248,7 +248,6 @@ Uploader.prototype._createToken = function(filepath, callback) {
         }
 
         callback(err, filepath);
-        self._cleanup(filename, self.fileMeta[filepath].tmpCleanup);
         return;
       }
 
