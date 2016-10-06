@@ -324,7 +324,6 @@ Uploader.prototype._mirror = function(fileid) {
     'Establishing %s mirrors per shard for redundancy',
     [this.redundancy]
   );
-  log('info', 'This can take a while, so grab a cocktail...');
 
   this.client.replicateFileFromBucket(
     this.bucket,
