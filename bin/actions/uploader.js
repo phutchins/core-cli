@@ -298,7 +298,7 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
       );
 
       if (self.redundancy && self.redundancy > 0) {
-        return self._mirror(file.id);
+        self._mirror(file.id);
       }
 
       self.uploadedCount++;
@@ -326,12 +326,6 @@ Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
  * @private
  */
 Uploader.prototype._mirror = function(fileid) {
-  log(
-    'info',
-    'Establishing %s mirrors per shard for redundancy',
-    [this.redundancy]
-  );
-
   this.client.replicateFileFromBucket(
     this.bucket,
     fileid,
@@ -342,9 +336,8 @@ Uploader.prototype._mirror = function(fileid) {
       }
 
       replicas.forEach(function(shard) {
-        log('info', 'Shard %s %s mirroring by %s nodes', [
+        log('info', 'Shard %s queued for mirroring by %s nodes', [
           shard.hash,
-          shard.status,
           shard.mirrors
         ]);
       });
