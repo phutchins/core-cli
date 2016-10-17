@@ -1,8 +1,6 @@
 [![Storj-cli](https://nodei.co/npm/storj.png?downloads=true)](http://storj.github.io/core-cli)
 ==============
 
-[![Build Status](https://img.shields.io/travis/Storj/core-cli.svg?style=flat-square)](https://travis-ci.org/Storj/core-cli)
-[![Coverage Status](https://img.shields.io/coveralls/Storj/core-cli.svg?style=flat-square)](https://coveralls.io/r/Storj/core-cli)
 [![NPM](https://img.shields.io/npm/v/storj.svg?style=flat-square)](https://www.npmjs.com/package/storj-cli)
 [![License](https://img.shields.io/badge/license-AGPL3.0-blue.svg?style=flat-square)](https://raw.githubusercontent.com/Storj/core-cli/master/LICENSE)
 
@@ -30,7 +28,7 @@ Installation and Guides
 
 - [Install Guide for Windows, Mac, and Linux](https://github.com/Storj/core/blob/master/INSTALL.md)
 - [Getting Started with a Storj Account](http://docs.storj.io/docs/getting-started)
-- [Uploading/Downloading with the CLI tools](http://docs.storj.io/docs/uploading-and-downloading-cat
+- [Uploading/Downloading with the CLI tools](http://docs.storj.io/docs/uploading-and-downloading-cat)
 
 
 License
