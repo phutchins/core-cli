@@ -74,13 +74,11 @@ Downloader.prototype._getInfo = function(callback) {
     if (err) {
       return callback(err);
     }
-
     log(   
       'info',   
       'Name: %s, Type: %s, Size: %s bytes, ID: %s',   
       [file.filename, file.mimetype, file.size, file.id]    
     );
-
     self.fileMeta = file;
 
     return callback(null);
