@@ -174,7 +174,7 @@ Uploader.prototype._loopThroughFiles = function(callback) {
 Uploader.prototype._calculateNewName = function(name){
   var array = name.split('.');
   var baseIndex = Math.max(array.length - 2, 0);
-  array[baseIndex] = array[baseIndex] + '-' + Date.now();
+  array[baseIndex] = array[baseIndex] + '-(' + Date.now() + ')';
   return array.join('.');
 };
 
@@ -189,11 +189,11 @@ Uploader.prototype._checkFileExistance = function(filepath, callback) {
 
   self.client.getFileInfo(self.bucket, fileId, function(err, fileInfo){
     if(fileInfo){
-      var newFilename = _nextName(filename);
+      var newFilename = self._calculateNewName(filename);
       log(
         'warn',
-        '[ %s ] Already exists in bucket. Uploading to %s',
-        filename, newFilename
+        '[ %s ] Already exists in bucket. Uploading to ' + newFilename,
+        filename
        );
       return callback(null, newFilename, filepath);
     }
