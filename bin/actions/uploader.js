@@ -36,7 +36,7 @@ function Uploader(client, keypass, options) {
   this.client = client(
     {
       transferConcurrency: this.shardConcurrency,
-      requestTimeout: 3000
+      requestTimeout: 10000
     }
   );
   this.keypass = keypass();
