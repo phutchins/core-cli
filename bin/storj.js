@@ -32,9 +32,7 @@ program.version(
   'Storjcli: ' + require('../package').version + ' | ' +
   'Core: ' + storj.version.software
 );
-program.option(
-  '-u, --url <url>', 'set the base url for the api', 'https://api.storj.io'
-);
+program.option('-u, --url <url>', 'set the base url for the api');
 program.option('-k, --keypass <password>', 'unlock keyring without prompt');
 program.option('-d, --debug', 'display debug data', 4);
 
@@ -47,21 +45,26 @@ program._storj.loglevel = function() {
   return program.debug || 3;
 };
 
+program._storj.getURL = function() {
+  return program.url || process.env.STORJ_BRIDGE || 'https://api.storj.io';
+};
+
 program._storj.PrivateClient = function(options) {
   if (typeof options === 'undefined') {
     options = {};
   }
   options.blacklistFolder = DATADIR;
 
-  return storj.BridgeClient(program.url, merge({
+  return storj.BridgeClient(program._storj.getURL(), merge({
     keyPair: program._storj.loadKeyPair(),
     logger: logger(program._storj.loglevel()).log
   }, options));
 };
 
 program._storj.PublicClient = function() {
+  console.log(program._storj.getURL());
   return storj.BridgeClient(
-    program.url,
+    program._storj.getURL(),
     { logger: logger(program._storj.loglevel()).log }
   );
 };

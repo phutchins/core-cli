@@ -52,7 +52,7 @@ module.exports.login = function() {
       return log('error', err.message);
     }
 
-    var client = storj.BridgeClient(self.url, {
+    var client = storj.BridgeClient(self._storj.getURL(), {
       basicauth: result
     });
     var keypair = storj.KeyPair();
