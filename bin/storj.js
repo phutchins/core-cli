@@ -225,6 +225,11 @@ program
   .action(utils.importkeyring.bind(program));
 
 program
+  .command('get-file-info <bucket-id> <file-id>')
+  .description('gets information about a file')
+  .action(actions.files.getInfo.bind(program));
+
+program
   .command('list-files <bucket-id>')
   .description('list the files in a specific storage bucket')
   .action(actions.files.list.bind(program));
