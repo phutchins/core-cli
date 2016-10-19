@@ -43,7 +43,9 @@ program._storj.PrivateClient = function(options) {
   if (typeof options === 'undefined') {
     options = {};
   }
+
   options.blacklistFolder = DATADIR;
+  options.requestTimeout = options.requestTimeout || 10000;
 
   return storj.BridgeClient(program.url, merge({
     keyPair: utils.loadKeyPair(),
