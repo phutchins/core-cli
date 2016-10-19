@@ -347,6 +347,14 @@ program
   .description('prints the usage information to the console')
   .action(ACTIONS.fallthrough);
 
+// NB: If piping output to another program that does not consume all the output
+// NB: (like `head`), don't throw an error.
+process.stdout.on('error', function(err) {
+  if (err.code === 'EPIPE') {
+    process.exit(0);
+  }
+});
+
 program.parse(process.argv);
 
 // Awwwww <3
