@@ -15,6 +15,7 @@ var logger = require('./logger');
 var log = logger().log;
 var utils = require('./utils');
 var actions = require('./index');
+var url = require('url');
 
 var HOME = platform !== 'win32' ? process.env.HOME : process.env.USERPROFILE;
 var DATADIR = path.join(HOME, '.storjcli');
@@ -31,9 +32,16 @@ program.version(
   'Storjcli: ' + require('../package').version + ' | ' +
   'Core: ' + storj.version.software
 );
-program.option('-u, --url <url>', 'set the base url for the api');
+program.option(
+  '-u, --url <url>', 'set the base url for the api', 'https://api.storj.io'
+);
 program.option('-k, --keypass <password>', 'unlock keyring without prompt');
 program.option('-d, --debug', 'display debug data', 4);
+
+program._storj.keypath = function() {
+  var keyfile = 'id_ecdsa_(' + url.parse(program.url).hostname + ')';
+  return path.join(DATADIR, keyfile);
+};
 
 program._storj.loglevel = function() {
   return program.debug || 3;
@@ -48,7 +56,7 @@ program._storj.PrivateClient = function(options) {
   options.requestTimeout = options.requestTimeout || 10000;
 
   return storj.BridgeClient(program.url, merge({
-    keyPair: utils.loadKeyPair(),
+    keyPair: program._storj.loadKeyPair(),
     logger: logger(program._storj.loglevel()).log
   }, options));
 };
@@ -62,6 +70,15 @@ program._storj.PublicClient = function() {
 
 program._storj.getKeyPass = function() {
   return program.keypass || process.env.STORJ_KEYPASS || null;
+};
+
+program._storj.loadKeyPair = function(){
+  if (!storj.utils.existsSync(program._storj.keypath())) {
+    log('error', 'You have not authenticated, please login.');
+    process.exit(1);
+  }
+
+  return storj.KeyPair(fs.readFileSync(program._storj.keypath()).toString());
 };
 
 var ACTIONS = {
@@ -139,9 +156,7 @@ program
 program
   .command('login')
   .description('authorize this device to access your storj api account')
-  .action(function() {
-    actions.account.login(program.url);
-  });
+  .action(actions.account.login.bind(program));
 
 program
   .command('logout')
@@ -225,6 +240,11 @@ program
   .command('import-keyring <path>')
   .description('imports keyring tarball into current keyring')
   .action(utils.importkeyring.bind(program));
+
+program
+  .command('get-file-info <bucket-id> <file-id>')
+  .description('gets information about a file')
+  .action(actions.files.getInfo.bind(program));
 
 program
   .command('list-files <bucket-id>')

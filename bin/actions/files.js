@@ -28,6 +28,22 @@ module.exports.list = function(bucketid) {
   });
 };
 
+module.exports.getInfo = function(bucketid, fileid) {
+   var client = this._storj.PrivateClient();
+
+  client.getFileInfo(bucketid, fileid, function(err, file) {
+     if (err) {
+       return log('error', err.message);
+     }
+
+    log(
+      'info',
+      'Name: %s, Type: %s, Size: %s bytes, ID: %s',
+      [file.filename, file.mimetype, file.size, file.id]
+    );
+  });
+};
+
 module.exports.remove = function(id, fileId, env) {
   var client = this._storj.PrivateClient();
   var keypass = this._storj.getKeyPass();
