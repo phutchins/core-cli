@@ -62,7 +62,6 @@ program._storj.PrivateClient = function(options) {
 };
 
 program._storj.PublicClient = function() {
-  console.log(program._storj.getURL());
   return storj.BridgeClient(
     program._storj.getURL(),
     { logger: logger(program._storj.loglevel()).log }
