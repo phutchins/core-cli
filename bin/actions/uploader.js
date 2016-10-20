@@ -370,10 +370,10 @@ Uploader.prototype._mirror = function(fileid) {
         return log('error', err.message);
       }
 
-      replicas.forEach(function(shard) {
-        log('info', 'Shard %s queued for mirroring by %s nodes', [
-          shard.hash,
-          shard.mirrors
+      replicas.forEach(function(shard, i) {
+        log('info', 'Shard %s establishing mirrors to %s nodes', [
+          i,
+          shard.length
         ]);
       });
 
