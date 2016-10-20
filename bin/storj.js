@@ -37,7 +37,7 @@ program.option('-k, --keypass <password>', 'unlock keyring without prompt');
 program.option('-d, --debug', 'display debug data', 4);
 
 program._storj.keypath = function() {
-  var keyfile = 'id_ecdsa_(' + url.parse(program.url).hostname + ')';
+  var keyfile = 'id_ecdsa_(' + url.parse(program._storj.getURL()).hostname + ')';
   return path.join(DATADIR, keyfile);
 };
 
