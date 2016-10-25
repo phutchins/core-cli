@@ -108,7 +108,7 @@ module.exports.update = function(id, name, storage, transfer) {
 
 module.exports.createtoken = function(bucket, operation) {
   var client = this._storj.PrivateClient();
-  id = this._storj.getRealBucketId(id);
+  bucket = this._storj.getRealBucketId(bucket);
 
   client.createToken(bucket, operation, function(err, token) {
     if (err) {
