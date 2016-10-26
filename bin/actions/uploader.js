@@ -29,7 +29,7 @@ function Uploader(client, keypass, options) {
 
   this.shardConcurrency = options.env.concurrency ?
                     parseInt(options.env.concurrency) :
-                    6;
+                    3;
   this.fileConcurrency = options.env.fileconcurrency || 1;
   this.bucket = options.bucket;
   this.redundancy = options.env.redundancy || 0;
