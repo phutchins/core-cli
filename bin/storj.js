@@ -95,6 +95,7 @@ program._storj.loadKeyPair = function(){
   */
 program._storj.getRealBucketId = function(bucketArg){
   if (!storj.utils.existsSync(program._storj.idpath())) {
+
     return bucketArg;
   }
   var userId = fs.readFileSync(program._storj.idpath()).toString();
@@ -153,7 +154,7 @@ var ACTIONS = {
   },
   download: function(bucket, id, filepath, env) {
     bucket = program._storj.getRealBucketId(bucket);
-    id = program._storj.getRealBucketId(bucket, id);
+    id = program._storj.getRealFileId(bucket, id);
     var options = {
       bucket: bucket,
       fileid: id,

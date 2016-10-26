@@ -234,10 +234,9 @@ Downloader.prototype.start = function(finalCallback) {
     }
   ], function (err, filepath) {
     if (err) {
-      var file = (self.destination) ? self.destination : self.filepath;
-      if (storj.utils.existsSync(file)) {
+      if (storj.utils.existsSync(self.destination) && self.destination) {
         log('info', 'Removing unfinished file: %s', self.destination);
-        fs.unlinkSync(file);
+        fs.unlinkSync(self.destination);
       }
     }
     finalCallback(err, filepath);
