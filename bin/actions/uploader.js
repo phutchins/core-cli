@@ -169,7 +169,7 @@ Uploader.prototype._loopThroughFiles = function(callback) {
  * check if a given file already exists in bucket
  * @private
  */
-Uploader.prototype._checkFileExistance = function(filepath, callback) {
+Uploader.prototype._checkFileExistence = function(filepath, callback) {
   var self = this;
   var filename = path.basename(filepath);
   var fileId = storj.utils.calculateFileId(self.bucket, filename);
@@ -206,7 +206,8 @@ Uploader.prototype._makeTempDir = function(filename, filepath, callback) {
 
     log('info', 'Encrypting file "%s"', [filepath]);
 
-    var secret = new storj.DataCipherKeyIv();
+    var fileId = storj.utils.calculateFileId(self.bucket, filename);
+    var secret = self.keyring.generateFileKey(self.bucket, fileId);
 
     self.fileMeta[filepath] = {
       filename: filename,
@@ -412,8 +413,8 @@ Uploader.prototype.start = function(finalCallback) {
     function _beginLoop(callback) {
       self._loopThroughFiles(callback);
     },
-    function _checkFileExistance(filepath, callback) {
-      self._checkFileExistance(filepath, callback);
+    function _checkFileExistence(filepath, callback) {
+      self._checkFileExistence(filepath, callback);
     },
     function _makeTempDir(filename, filepath, callback) {
       self._makeTempDir(filename, filepath, callback);
