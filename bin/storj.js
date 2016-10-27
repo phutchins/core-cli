@@ -389,6 +389,27 @@ program
   .action(utils.verifyproof.bind(program));
 
 program
+  .command('generate-seed')
+  .description('generates new deterministic seed')
+  .action(actions.seed.generateSeed.bind(program));
+
+program
+  .command('print-seed')
+  .description('prints the human readable deterministic seed')
+  .action(actions.seed.printSeed.bind(program));
+
+program
+  .command('import-seed')
+  .description('imports deterministic seed from another device')
+  .action(actions.seed.importSeed.bind(program));
+
+program
+  .command('delete-seed')
+  .description('deletes the deterministic seed from the keyring')
+  .action(actions.seed.deleteSeed.bind(program));
+
+
+program
   .command('*')
   .description('prints the usage information to the console')
   .action(ACTIONS.fallthrough);
