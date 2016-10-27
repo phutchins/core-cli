@@ -22,16 +22,16 @@ var monitor = require('os-monitor');
  * @param {String} options.filepath - Path of files being uploaded.
  */
   /* jshint maxstatements: 20 */
-function Uploader(client, keypass, options) {
+function Uploader(client, bucket, options) {
   if (!(this instanceof Uploader)) {
-    return new Uploader(client, keypass, options);
+    return new Uploader(client, bucket, options);
   }
 
   this.shardConcurrency = options.env.concurrency ?
                     parseInt(options.env.concurrency) :
                     3;
   this.fileConcurrency = options.env.fileconcurrency || 1;
-  this.bucket = options.bucket;
+  this.bucket = bucket;
   this.redundancy = options.env.redundancy || 0;
   this.client = client(
     {
@@ -39,7 +39,7 @@ function Uploader(client, keypass, options) {
       requestTimeout: 10000
     }
   );
-  this.keypass = keypass();
+  this.keypass = options.keypass;
   this.filepaths = this._getAllFiles(options.filepath);
   this.fileCount = this.filepaths.length;
   this.uploadedCount = 0;
