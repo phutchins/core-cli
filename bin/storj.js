@@ -250,6 +250,11 @@ program
   .action(actions.buckets.update.bind(program));
 
 program
+  .command('make-public <bucket-id> <public-pull> <public-push>')
+  .description('makes a specific storage bucket public, uploading bucket key to bridge')
+  .action(actions.buckets.makePublic.bind(program));
+
+program
   .command('add-frame')
   .description('creates a new file staging frame')
   .action(actions.frames.add.bind(program));

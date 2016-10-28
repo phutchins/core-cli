@@ -106,6 +106,53 @@ module.exports.update = function(id, name, storage, transfer) {
   });
 };
 
+module.exports.makePublic = function(id, publicPull, publicPush) {
+  var client = this._storj.PrivateClient();
+  id = this._storj.getRealBucketId(id);
+
+  var _finish = function(permissions, bucketKey){
+    client.updateBucketById(id, {
+      publicPermissions: permissions,
+      encryptionKey: bucketKey
+    }, function(err, bucket) {
+      if (err) {
+        return log('error', err.message);
+      }
+      var publicPull = bucket.publicPermissions.indexOf('PULL') !== -1;
+      var publicPush = bucket.publicPermissions.indexOf('PUSH') !== -1;
+      var key = bucket.encryptionKey.length == 0 ? null : bucket.encryptionKey;
+      log(
+        'info',
+        'ID: %s, Name: %s, Public Pull: %s, Public Push: %s, Key: %s',
+        [bucket.id, bucket.name, publicPull, publicPush, key]
+      );
+    });
+  };
+
+  var permissions = [];
+  var allowed = ['1', 'true', 'yes', 'y'];
+  if (allowed.indexOf(publicPull.toLowerCase()) !== -1) {
+    permissions.push('PULL');
+  }
+  if (allowed.indexOf(publicPush.toLowerCase()) !== -1) {
+    permissions.push('PUSH');
+  }
+
+  if(permissions.length == 0){
+    return _finish([], '');
+  }
+
+  var keypass = this._storj.getKeyPass();
+  utils.getKeyRing(keypass, function(keyring) {
+    var bucketKey = keyring.generateBucketKey(id);
+    if(bucketKey === null){
+      return log('error', 'You must generate a deterministic seed');
+    }
+    _finish(permissions, bucketKey);
+  });
+
+};
+
 module.exports.createtoken = function(bucket, operation) {
   var client = this._storj.PrivateClient();
   bucket = this._storj.getRealBucketId(bucket);
