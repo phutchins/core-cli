@@ -92,13 +92,18 @@ program._storj.loadKeyPair = function(){
 /**
   * Calculate real bucket id from either bucket name or id
   * @param {String} bucketArg - Bucket name or bucket id
+  * @param {String} [userId] - override your own id
   */
-program._storj.getRealBucketId = function(bucketArg){
-  if (!storj.utils.existsSync(program._storj.idpath())) {
-
+program._storj.getRealBucketId = function(bucketArg, userId){
+  // return bucketArg if we don't have a userId
+  if (!storj.utils.existsSync(program._storj.idpath()) && !userId) {
     return bucketArg;
   }
-  var userId = fs.readFileSync(program._storj.idpath()).toString();
+  // retrieve our own id if one was not passed in
+  if(!userId){
+    userId = fs.readFileSync(program._storj.idpath()).toString();
+  }
+  // translate to name if argument doesn't match id or resolution is forced
   if(!bucketArg.match(/^[0-9a-f]{24}$/i) || program.byname){
     return storj.utils.calculateBucketId(userId, bucketArg);
   }
@@ -127,7 +132,7 @@ var ACTIONS = {
     program.help();
   },
   upload: function(bucket, filepath, env) {
-    bucket = program._storj.getRealBucketId(bucket);
+    bucket = program._storj.getRealBucketId(bucket, env.user);
     var options = {
       bucket: bucket,
       filepath: filepath,
@@ -153,7 +158,7 @@ var ACTIONS = {
     });
   },
   download: function(bucket, id, filepath, env) {
-    bucket = program._storj.getRealBucketId(bucket);
+    bucket = program._storj.getRealBucketId(bucket, env.user);
     id = program._storj.getRealFileId(bucket, id);
     var options = {
       bucket: bucket,
@@ -306,6 +311,7 @@ program
   .option('-c, --concurrency <count>', 'max shard upload concurrency')
   .option('-C, --fileconcurrency <count>', 'max file upload concurrency', 1)
   .option('-r, --redundancy <mirrors>', 'number of mirrors to create for file')
+  .option('-u, --user <user>', 'user id for public name resolution', null)
   .description('upload a file or files to the network and track in a bucket.' +
                '\n  upload all files in a single directory using "/path/*"\n' +
                '  or upload recursively using "/path/**/*".\n' +
@@ -323,6 +329,7 @@ program
 program
   .command('download-file <bucket-id> <file-id> <filepath>')
   .option('-x, --exclude <nodeID,nodeID...>', 'mirrors to create for file', '')
+  .option('-u, --user <user>', 'user id for public name resolution', null)
   .description('download a file from the network with a pointer from a bucket')
   .action(ACTIONS.download);
 
