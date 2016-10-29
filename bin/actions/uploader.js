@@ -183,9 +183,11 @@ Uploader.prototype._checkFileExistence = function(filepath, callback) {
         '[ %s ] Already exists in bucket. Uploading to ' + newFilename,
         filename
        );
-      return callback(null, newFilename, filepath);
+      self.filename = newFilename;
+      return callback(null, filepath);
     }
-    callback(null, filename, filepath);
+    self.filename = filename;
+    callback(null, filepath);
   });
 };
 
@@ -194,8 +196,10 @@ Uploader.prototype._checkFileExistence = function(filepath, callback) {
  * @param {String} filepath - file to be uploaded
  * @private
  */
-Uploader.prototype._makeTempDir = function(filename, filepath, callback) {
+Uploader.prototype._makeTempDir = function(filepath, callback) {
   var self = this;
+  var filename = self.filename;
+  var token = self.token;
 
   utils.makeTempDir(function(err, tmpDir, tmpCleanup) {
     if (err) {
@@ -207,7 +211,14 @@ Uploader.prototype._makeTempDir = function(filename, filepath, callback) {
     log('info', 'Encrypting file "%s"', [filepath]);
 
     var fileId = storj.utils.calculateFileId(self.bucket, filename);
-    var secret = self.keyring.generateFileKey(self.bucket, fileId);
+
+    if(token.encryptionKey.length > 0){
+      // generate file key based on public encryptionKey
+      var secret = storj.DataCipherKeyIv.getHDFileKey(token.encryptionKey, fileId);
+    } else {
+      // generate file key based on private
+      var secret = self.keyring.generateFileKey(self.bucket, fileId);
+    }
 
     self.fileMeta[filepath] = {
       filename: filename,
@@ -253,7 +264,7 @@ Uploader.prototype._createReadStream = function(filepath, callback) {
  */
 Uploader.prototype._createToken = function(filepath, callback) {
   var self = this;
-  var filename = self.fileMeta[filepath].filename;
+  var filename = self.filename;
   var retry = 0;
 
   function _createToken() {
@@ -274,8 +285,8 @@ Uploader.prototype._createToken = function(filepath, callback) {
         callback(err, filepath);
         return;
       }
-
-      callback(null, filepath, token);
+      self.token = token;
+      callback(null, filepath);
     });
   }
 
@@ -288,9 +299,10 @@ Uploader.prototype._createToken = function(filepath, callback) {
  * @private
  */
  /* jshint maxstatements: 20 */
-Uploader.prototype._storeFileInBucket = function(filepath, token, callback) {
+Uploader.prototype._storeFileInBucket = function(filepath, callback) {
   var self = this;
   var filename = self.fileMeta[filepath].filename;
+  var token = self.token;
 
   log('info', '[ %s ] Storing file, hang tight!', filename);
 
@@ -416,17 +428,17 @@ Uploader.prototype.start = function(finalCallback) {
     function _checkFileExistence(filepath, callback) {
       self._checkFileExistence(filepath, callback);
     },
-    function _makeTempDir(filename, filepath, callback) {
-      self._makeTempDir(filename, filepath, callback);
+    function _createToken(filepath, callback) {
+      self._createToken(filepath, callback);
+    },
+    function _makeTempDir(filepath, callback) {
+      self._makeTempDir(filepath, callback);
     },
     function _createReadStream(filepath, callback) {
       self._createReadStream(filepath, callback);
     },
-    function _createToken(filepath, callback) {
-      self._createToken(filepath, callback);
-    },
-    function _storeFileInBucket(filepath, token, callback) {
-      self._storeFileInBucket(filepath, token, callback);
+    function _storeFileInBucket(filepath, callback) {
+      self._storeFileInBucket(filepath, callback);
     }
   ], function (err, filepath) {
     self._handleFailure();
