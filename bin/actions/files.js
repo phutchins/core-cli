@@ -1,9 +1,6 @@
 'use strict';
 var log = require('./../logger')().log;
 var utils = require('./../utils');
-var fs = require('fs');
-var path = require('path');
-var through = require('through');
 var storj = require('storj-lib');
 
 module.exports.list = function(bucketid) {
@@ -51,7 +48,7 @@ module.exports.remove = function(id, fileId, env) {
   var client = this._storj.PrivateClient();
   var keypass = this._storj.getKeyPass();
   id = this._storj.getRealBucketId(id);
-  fileid = this._storj.getRealFileId(id, fileid);
+  fileId = this._storj.getRealFileId(id, fileId);
 
   function destroyFile() {
     utils.getKeyRing(keypass, function(keyring) {
