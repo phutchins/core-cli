@@ -1,3 +1,4 @@
+
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
@@ -21,14 +22,10 @@ var Account = proxyquire('../../bin/actions/account.js', {
 describe('account', function() {
   beforeEach(function() {
     LoggerStub.log.reset();
-    for (var key in utilsStub) {
-      delete utilsStub[key];
-    }
-    for (var key in storjStub) {
-      delete storjStub[key];
-    }
-    for (var key in fsStub) {
-      delete fsStub[key];
+    for (var stub in [utilsStub, storjStub, fsStub]) {
+      for (var k in stub) {
+        delete stub[k];
+      }
     }
   });
 
@@ -193,7 +190,7 @@ describe('account', function() {
       };
       var addPubKeySpy = sinon.spy(clientStub, 'addPublicKey');
       var keypairStub = {
-        getPublicKey: sinon.stub().returns(testPubkey)
+        getPublicKey: sinon.stub().returns(testPubkey);
       }
 
       storjStub.utils = {
@@ -254,22 +251,120 @@ describe('account', function() {
   });
 
   describe('#logout', function() {
-    it('should log an error if there is a problem revoking the key, but should still unpair the key', function() {
-      expect(1).to.equal(3);
+    it('should log a warning if there is a problem revoking the key, but should still unpair the key', function() {
+      var errorMessage = 'This is an error.';
+      var testIdPath = '/test/id/path';
+      var testKeyPath = '/test/key/path';
+      var testPubkey = 'test public key';
+      var keypairStub = {
+        getPublicKey: sinon.stub().returns(testPubkey)
+      }
+      var PrivateClientStub = {
+        destroyPublicKey: function(publicKey, cb) {
+          cb({message: errorMessage});
+        }
+      };
+      var destroyPublicKeySpy = sinon.spy(PrivateClientStub, 'destroyPublicKey');
+      storjStub.utils = {
+        existsSync: sinon.stub().returns(true)
+      };
+      Account._storj.PrivateClient = sinon.stub().returns(PrivateClientStub);
+      Account._storj.loadKeyPair = sinon.stub().returns(keypairStub);
+      Account._storj.idpath = testIdPath;
+      Account._storj.keypath = testKeyPath;
+      fsStub.unlinkSync = sinon.stub();
+
+      Account.logout();
+
+      expect(destroyPublicKeySpy.callCount).to.equal(1);
+      expect(destroyPublicKeySpy.calledWithMatch(testPubkey)).to.be.ok;
+      expect(fsStub.unlinkSync.callCount).to.equal(2);
+      expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.be.ok;
+      expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.be.ok;
+      expect(LoggerStub.log.callCount).to.equal(3);
+      expect(LoggerStub.log.calledWithMatch('info', 'This device has been successfully unpaired.')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('warn', 'Failed to revoke key')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('warn', errorMessage)).to.be.ok;
     });
 
     it('should successfully revoke and unpair the key if there is no error', function() {
-      expect(1).to.equal(3);
+      var errorMessage = 'This is an error.';
+      var testIdPath = '/test/id/path';
+      var testKeyPath = '/test/key/path';
+      var testPubkey = 'test public key';
+      var keypairStub = {
+        getPublicKey: sinon.stub().returns(testPubkey)
+      }
+      var PrivateClientStub = {
+        destroyPublicKey: function(publicKey, cb) {
+          cb();
+        }
+      };
+      var destroyPublicKeySpy = sinon.spy(PrivateClientStub, 'destroyPublicKey');
+      storjStub.utils = {
+        existsSync: sinon.stub().returns(true)
+      };
+      Account._storj.PrivateClient = sinon.stub().returns(PrivateClientStub);
+      Account._storj.loadKeyPair = sinon.stub().returns(keypairStub);
+      Account._storj.idpath = testIdPath;
+      Account._storj.keypath = testKeyPath;
+      fsStub.unlinkSync = sinon.stub();
+
+      Account.logout();
+
+      expect(fsStub.unlinkSync.callCount).to.equal(2);
+      expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.be.ok;
+      expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.be.ok;
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('info', 'This device has been successfully unpaired.')).to.be.ok;
     });
   });
 
   describe('#resetpassword', function() {
     it('should log an error if there is a problem resetting the password', function() {
-      expect(1).to.equal(3);
+      var errorMessage = 'This is an error.';
+      var testEmail = 'testemail@something.com';
+      var testPassword = 'testpassword';
+      utilsStub.getNewPassword = function(prompt, cb) {
+        cb(null, {password: testPassword});
+      };
+      var PrivateClientStub = {
+        resetPassword: function(data, cb) {
+          cb({message: errorMessage});
+        }
+      };
+      var resetPasswordSpy = sinon.spy(PrivateClientStub, 'resetPassword');
+      Account._storj.PrivateClient = sinon.stub().returns(PrivateClientStub);
+
+      Account.resetpassword(testEmail);
+
+      expect(resetPasswordSpy.callCount).to.equal(1);
+      expect(resetPasswordSpy.calledWithMatch({email: testEmail, password: testPassword})).to.be.ok;
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('error', 'Failed to request password reset', [errorMessage])).to.be.ok;
     });
 
     it('should log a success message if the password reset request succeeds', function() {
-      expect(1).to.equal(3);
+      var errorMessage = 'This is an error.';
+      var testEmail = 'testemail@something.com';
+      var testPassword = 'testpassword';
+      utilsStub.getNewPassword = function(prompt, cb) {
+        cb(null, {password: testPassword});
+      };
+      var PrivateClientStub = {
+        resetPassword: function(data, cb) {
+          cb();
+        }
+      };
+      var resetPasswordSpy = sinon.spy(PrivateClientStub, 'resetPassword');
+      Account._storj.PrivateClient = sinon.stub().returns(PrivateClientStub);
+
+      Account.resetpassword(testEmail);
+
+      expect(resetPasswordSpy.callCount).to.equal(1);
+      expect(resetPasswordSpy.calledWithMatch({email: testEmail, password: testPassword})).to.be.ok;
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('info', 'Password reset request processed')).to.be.ok;
     });
   });
 });
