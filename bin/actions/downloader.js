@@ -179,7 +179,8 @@ Downloader.prototype._handleFileStream = function(stream, callback) {
   var received = 0;
 
   if (stream.encryptionKey) {
-    var secret = storj.DataCipherKeyIv.getHDFileKey(stream.encryptionKey, self.fileid);
+    var fileKey = storj.DeterministicKeyIv.getDeterministicKey(stream.encryptionKey, self.fileid);
+    var secret = new storj.DeterministicKeyIv(fileKey, self.fileid);
   } else {
     var secret = this.keyring.get(this.fileid, this.bucket);
   }
