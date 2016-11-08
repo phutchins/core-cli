@@ -19,16 +19,16 @@ var through = require('through');
  * @param {String} options.env.exclude - Nodes to exclude when downloading.
  * @param {String} options.filepath - Path of files being uploaded.
  */
-function Downloader(client, keypass, options) {
+function Downloader(client, fileid, bucketid, options) {
   if (!(this instanceof Downloader)) {
-    return new Downloader(client, keypass, options);
+    return new Downloader(client, fileid, bucketid, options);
   }
 
-  this.bucket = options.bucket;
-  this.fileid = options.fileid;
+  this.bucket = bucketid;
+  this.fileid = fileid;
   this.filepath = options.filepath;
   this.client = client();
-  this.keypass = keypass();
+  this.keypass = options.keypass;
   this.fileMeta = null;
   this.exclude = options.env.exclude;
 

@@ -150,9 +150,7 @@ describe('account', function() {
   describe('#login', function() {
     it('should log an error if a user is already logged in', function() {
       var keyPath = '/test/key/path';
-      Account._storj.keypath = function() {
-        return keyPath;
-      }
+      Account._storj.keypath = keyPath;
       storjStub.utils = {
         existsSync: sinon.stub().returns(true)
       };
@@ -208,7 +206,7 @@ describe('account', function() {
       Account.login();
 
       expect(storjStub.BridgeClient.callCount).to.equal(1);
-      expect(storjStub.BridgeClient.calledWithMatch(testUrl, {basicauth: credentials})).to.be.ok;
+      expect(storjStub.BridgeClient.calledWithMatch(testUrl, {basicAuth: credentials})).to.be.ok;
       expect(addPubKeySpy.callCount).to.equal(1);
       expect(addPubKeySpy.calledWithMatch(testPubkey)).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
@@ -241,8 +239,8 @@ describe('account', function() {
       storjStub.BridgeClient = sinon.stub().returns(clientStub);
       storjStub.KeyPair = sinon.stub().returns(keypairStub);
       Account._storj.getURL = sinon.stub().returns(testUrl);
-      Account._storj.idpath = sinon.stub().returns(testIdPath);
-      Account._storj.keypath = sinon.stub().returns(testKeyPath);
+      Account._storj.idpath = testIdPath;
+      Account._storj.keypath = testKeyPath;
       fsStub.writeFileSync = sinon.stub();
 
       Account.login();
