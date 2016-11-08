@@ -100,7 +100,17 @@ Uploader.prototype._getAllFiles = function(filepath) {
       throw new Error(file + ' could not be found');
     }
 
-    if (fs.statSync(parsedFileArray[0]).isFile() === true) {
+    var stat = fs.statSync(parsedFileArray[0]);
+
+    if (stat.size < 1) {
+      log(
+        'warn',
+        'Skipping [ %s ]... we don\'t support files smaller than 1 Byte.',
+        [ parsedFileArray[0] ]
+      );
+    }
+
+    if (stat.isFile() === true && stat.size > 0) {
       try {
         fs.accessSync(parsedFileArray[0], fs.R_OK);
       } catch (err) {
