@@ -1,9 +1,6 @@
 'use strict';
 var log = require('./../logger')().log;
 var utils = require('./../utils');
-var fs = require('fs');
-var path = require('path');
-var through = require('through');
 var storj = require('storj-lib');
 
 module.exports.list = function(bucketid) {
