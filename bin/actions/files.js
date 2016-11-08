@@ -51,7 +51,7 @@ module.exports.remove = function(id, fileId, env) {
   var client = this._storj.PrivateClient();
   var keypass = this._storj.getKeyPass();
   id = this._storj.getRealBucketId(id);
-  fileid = this._storj.getRealFileId(id, fileid);
+  fileId = this._storj.getRealFileId(id, fileId);
 
   function destroyFile() {
     utils.getKeyRing(keypass, function(keyring) {
