@@ -375,6 +375,7 @@ Uploader.prototype._mirror = function(fileid) {
         ]);
       });
 
+      return;
     }
   );
 };
