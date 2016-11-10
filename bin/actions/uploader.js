@@ -22,16 +22,16 @@ var monitor = require('os-monitor');
  * @param {String} options.filepath - Path of files being uploaded.
  */
   /* jshint maxstatements: 20 */
-function Uploader(client, keypass, options) {
+function Uploader(client, bucket, options) {
   if (!(this instanceof Uploader)) {
-    return new Uploader(client, keypass, options);
+    return new Uploader(client, bucket, options);
   }
 
   this.shardConcurrency = options.env.concurrency ?
                     parseInt(options.env.concurrency) :
                     3;
   this.fileConcurrency = options.env.fileconcurrency || 1;
-  this.bucket = options.bucket;
+  this.bucket = bucket;
   this.redundancy = options.env.redundancy || 0;
   this.client = client(
     {
@@ -39,7 +39,7 @@ function Uploader(client, keypass, options) {
       requestTimeout: 10000
     }
   );
-  this.keypass = keypass();
+  this.keypass = options.keypass;
   this.filepaths = this._getAllFiles(options.filepath);
   this.fileCount = this.filepaths.length;
   this.uploadedCount = 0;
@@ -100,7 +100,17 @@ Uploader.prototype._getAllFiles = function(filepath) {
       throw new Error(file + ' could not be found');
     }
 
-    if (fs.statSync(parsedFileArray[0]).isFile() === true) {
+    var stat = fs.statSync(parsedFileArray[0]);
+
+    if (stat.size < 1) {
+      log(
+        'warn',
+        'Skipping [ %s ]... we don\'t support files smaller than 1 Byte.',
+        [ parsedFileArray[0] ]
+      );
+    }
+
+    if (stat.isFile() === true && stat.size > 0) {
       try {
         fs.accessSync(parsedFileArray[0], fs.R_OK);
       } catch (err) {
@@ -379,6 +389,7 @@ Uploader.prototype._mirror = function(fileid) {
         ]);
       });
 
+      return;
     }
   );
 };

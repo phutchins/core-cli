@@ -45,15 +45,13 @@ program._storj.getURL = function() {
   return program.url || process.env.STORJ_BRIDGE || 'https://api.storj.io';
 };
 
-program._storj.keypath = function() {
-  var keyfile = 'id_ecdsa_(' + url.parse(program._storj.getURL()).hostname +')';
-  return path.join(DATADIR, keyfile);
+program._storj.path = function(prefix) {
+  var file = prefix + url.parse(program._storj.getURL()).hostname +')';
+  return path.join(DATADIR, file);
 };
 
-program._storj.idpath = function() {
-  var idFile = 'id_user_(' + url.parse(program._storj.getURL()).hostname +')';
-  return path.join(DATADIR, idFile);
-};
+program._storj.keypath = program._storj.path('id_ecdsa_(');
+program._storj.idpath = program._storj.path('id_user_(');
 
 program._storj.PrivateClient = function(options) {
   if (typeof options === 'undefined') {
@@ -81,12 +79,12 @@ program._storj.getKeyPass = function() {
 };
 
 program._storj.loadKeyPair = function(){
-  if (!storj.utils.existsSync(program._storj.keypath())) {
+  if (!storj.utils.existsSync(program._storj.keypath)) {
     log('error', 'You have not authenticated, please login.');
     process.exit(1);
   }
 
-  return storj.KeyPair(fs.readFileSync(program._storj.keypath()).toString());
+  return storj.KeyPair(fs.readFileSync(program._storj.keypath).toString());
 };
 
 /**
@@ -96,12 +94,12 @@ program._storj.loadKeyPair = function(){
   */
 program._storj.getRealBucketId = function(bucketArg, userId){
   // return bucketArg if we don't have a userId
-  if (!storj.utils.existsSync(program._storj.idpath()) && !userId) {
+  if (!storj.utils.existsSync(program._storj.idpath && !userId) {
     return bucketArg;
   }
   // retrieve our own id if one was not passed in
   if(!userId){
-    userId = fs.readFileSync(program._storj.idpath()).toString();
+    userId = fs.readFileSync(program._storj.idpath.toString();
   }
   // translate to name if argument doesn't match id or resolution is forced
   if(!bucketArg.match(/^[0-9a-f]{24}$/i) || program.byname){
@@ -134,8 +132,8 @@ var ACTIONS = {
   upload: function(bucket, filepath, env) {
     bucket = program._storj.getRealBucketId(bucket, env.user);
     var options = {
-      bucket: bucket,
       filepath: filepath,
+      keypass: program._storj.getKeyPass(),
       env: env
     };
     var uploader;
@@ -143,7 +141,7 @@ var ACTIONS = {
     try {
       uploader = new actions.Uploader(
         program._storj.PrivateClient,
-        program._storj.getKeyPass,
+        bucket,
         options
       );
     } catch(err) {
@@ -161,9 +159,8 @@ var ACTIONS = {
     bucket = program._storj.getRealBucketId(bucket, env.user);
     id = program._storj.getRealFileId(bucket, id);
     var options = {
-      bucket: bucket,
-      fileid: id,
       filepath: filepath,
+      keypass: program._storj.getKeyPass(),
       env: env
     };
     var downloader;
@@ -171,7 +168,8 @@ var ACTIONS = {
     try {
       downloader = new actions.Downloader(
         program._storj.PrivateClient,
-        program._storj.getKeyPass,
+        id,
+        bucket,
         options
       );
     } catch(err) {
