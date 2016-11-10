@@ -94,15 +94,15 @@ program._storj.loadKeyPair = function(){
   */
 program._storj.getRealBucketId = function(bucketArg, userId){
   // return bucketArg if we don't have a userId
-  if (!storj.utils.existsSync(program._storj.idpath && !userId) {
+  if (!storj.utils.existsSync(program._storj.idpath) && !userId) {
     return bucketArg;
   }
   // retrieve our own id if one was not passed in
-  if(!userId){
-    userId = fs.readFileSync(program._storj.idpath.toString();
+  if (!userId) {
+    userId = fs.readFileSync(program._storj.idpath).toString();
   }
   // translate to name if argument doesn't match id or resolution is forced
-  if(!bucketArg.match(/^[0-9a-f]{24}$/i) || program.byname){
+  if (!bucketArg.match(/^[0-9a-f]{24}$/i) || program.byname) {
     return storj.utils.calculateBucketId(userId, bucketArg);
   }
   return bucketArg;

@@ -33,7 +33,7 @@ module.exports.importSeed = function() {
   var keypass = this._storj.getKeyPass();
   utils.getKeyRing(keypass, function(keyring) {
 
-    if(keyring.exportMnemonic()){
+    if (keyring.exportMnemonic()) {
       return log('error', 'Mnemonic already exists');
     }
 

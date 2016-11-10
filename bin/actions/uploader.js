@@ -185,7 +185,7 @@ Uploader.prototype._checkFileExistence = function(filepath, callback) {
   var fileId = storj.utils.calculateFileId(self.bucket, filename);
 
   self.client.getFileInfo(self.bucket, fileId, function(err, fileInfo){
-    if(fileInfo){
+    if (fileInfo) {
       var date = (new Date().toISOString()).replace(/:/g, ';');
       var newFilename = '(' + date + ')-' + filename;
       log(
@@ -222,7 +222,7 @@ Uploader.prototype._makeTempDir = function(filepath, callback) {
 
     var fileId = storj.utils.calculateFileId(self.bucket, filename);
 
-    if(token.encryptionKey){
+    if (token.encryptionKey) {
       // generate file key based on public encryptionKey
       var fileKey = storj.DeterministicKeyIv.getDeterministicKey(token.encryptionKey, fileId);
       var secret = new storj.DeterministicKeyIv(fileKey, fileId);
