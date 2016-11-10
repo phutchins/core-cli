@@ -1,4 +1,4 @@
-
+'use strict';
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
@@ -22,9 +22,15 @@ var Account = proxyquire('../../bin/actions/account.js', {
 describe('account', function() {
   beforeEach(function() {
     LoggerStub.log.reset();
-    for (var stub in [utilsStub, storjStub, fsStub]) {
+    var stubs = [utilsStub, storjStub, fsStub];
+    for (var i=0; i<stubs.length; i++) {
+      var stub = stubs[i];
       for (var k in stub) {
-        delete stub[k];
+        try {
+          delete stub[k];
+        } catch(e) {
+          // occurs when a key in the object is not writable
+        }
       }
     }
   });
@@ -49,7 +55,8 @@ describe('account', function() {
       expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
     });
 
-    it('should log out title, description, version, and host of the client if there is no error', function() {
+    it('should log out title, description, version, and host of the client ' +
+      'if there is no error', function() {
       var info = {
         info: {
           title: 'test title',
@@ -72,15 +79,21 @@ describe('account', function() {
       Account.getInfo();
 
       expect(LoggerStub.log.callCount).to.equal(4);
-      expect(LoggerStub.log.calledWithMatch('info', 'Title', [info.info.title])).to.be.ok;
-      expect(LoggerStub.log.calledWithMatch('info', 'Description', [info.info.description])).to.be.ok;
-      expect(LoggerStub.log.calledWithMatch('info', 'Version', [info.info.version])).to.be.ok;
-      expect(LoggerStub.log.calledWithMatch('info', 'Host', [info.host])).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info', 'Title',
+        [info.info.title])).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info', 'Description',
+        [info.info.description])).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info', 'Version',
+        [info.info.version])).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info', 'Host',
+        [info.host])).to.be.ok;
     });
   });
 
   describe('#register', function() {
-    it('should log an error if there is an problem getting the user\'s credentials', function() {
+    it('should log an error if there is an problem getting the user\'s ' +
+      'credentials',
+      function() {
       var errorMessage = 'This is an error';
       utilsStub.getCredentials = function(cb) {
         cb({message: errorMessage});
@@ -92,9 +105,11 @@ describe('account', function() {
       expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
     });
 
-    it('should log an error if there is a problem creating a new user', function() {
+    it('should log an error if there is a problem creating a new user',
+      function() {
       var errorMessage = 'This is an error';
-      var credentials = {email: 'testemail@something.com', password: 'testpassword'};
+      var credentials = {email: 'testemail@something.com',
+        password: 'testpassword'};
       utilsStub.getCredentials = function(cb) {
         cb(null, credentials);
       };
@@ -113,13 +128,16 @@ describe('account', function() {
       Account.register();
 
       expect(createUserSpy.callCount).to.equal(1);
-      expect(createUserSpy.calledWithMatch({'email': credentials.email, 'password': credentials.password})).to.be.ok;
+      expect(createUserSpy.calledWithMatch({'email': credentials.email,
+        'password': credentials.password})).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
     });
 
-    it('should log a "Registered" message when a user is successfully created', function() {
-      var credentials = {email: 'testemail@something.com', password: 'testpassword'};
+    it('should log a "Registered" message when a user is successfully created',
+      function() {
+      var credentials = {email: 'testemail@something.com',
+        password: 'testpassword'};
       utilsStub.getCredentials = function(cb) {
         cb(null, credentials);
       };
@@ -138,7 +156,8 @@ describe('account', function() {
       Account.register();
 
       expect(createUserSpy.callCount).to.equal(1);
-      expect(createUserSpy.calledWithMatch({'email': credentials.email, 'password': credentials.password})).to.be.ok;
+      expect(createUserSpy.calledWithMatch({'email': credentials.email,
+        'password': credentials.password})).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info', 'Registered')).to.be.ok;
     });
@@ -157,10 +176,13 @@ describe('account', function() {
       expect(storjStub.utils.existsSync.callCount).to.equal(1);
       expect(storjStub.utils.existsSync.calledWithMatch(keyPath)).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', 'This device is already paired.')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        'This device is already paired.')).to.be.ok;
     });
 
-    it('should log an error if there is an problem getting the user\'s credentials', function() {
+    it('should log an error if there is an problem getting the user\'s ' +
+      'credentials',
+      function() {
       var errorMessage = 'This is an error';
       utilsStub.getCredentials = function(cb) {
         cb({message: errorMessage});
@@ -175,11 +197,14 @@ describe('account', function() {
       expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
     });
 
-    it('should log an error if there is a problem adding a new public key to the client', function() {
+    it('should log an error if there is a problem adding a new public key to ' +
+      'the client',
+      function() {
       var errorMessage = 'This is an error';
       var testPubkey = 'test public key';
       var testUrl = 'http://testurl.com';
-      var credentials = {email: 'testemail@something.com', password: 'testpassword'};
+      var credentials = {email: 'testemail@something.com',
+        password: 'testpassword'};
       utilsStub.getCredentials = function(cb) {
         cb(null, credentials);
       };
@@ -190,8 +215,8 @@ describe('account', function() {
       };
       var addPubKeySpy = sinon.spy(clientStub, 'addPublicKey');
       var keypairStub = {
-        getPublicKey: sinon.stub().returns(testPubkey);
-      }
+        getPublicKey: sinon.stub().returns(testPubkey)
+      };
 
       storjStub.utils = {
         existsSync: sinon.stub().returns(false)
@@ -203,7 +228,8 @@ describe('account', function() {
       Account.login();
 
       expect(storjStub.BridgeClient.callCount).to.equal(1);
-      expect(storjStub.BridgeClient.calledWithMatch(testUrl, {basicAuth: credentials})).to.be.ok;
+      expect(storjStub.BridgeClient.calledWithMatch(testUrl,
+        {basicAuth: credentials})).to.be.ok;
       expect(addPubKeySpy.callCount).to.equal(1);
       expect(addPubKeySpy.calledWithMatch(testPubkey)).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
@@ -216,7 +242,8 @@ describe('account', function() {
       var testIdPath = '/test/id/path';
       var testKeyPath = '/test/key/path';
       var testUrl = 'http://testurl.com';
-      var credentials = {email: 'testemail@something.com', password: 'testpassword'};
+      var credentials = {email: 'testemail@something.com',
+        password: 'testpassword'};
       utilsStub.getCredentials = function(cb) {
         cb(null, credentials);
       };
@@ -225,11 +252,10 @@ describe('account', function() {
           cb();
         }
       };
-      var addPubKeySpy = sinon.spy(clientStub, 'addPublicKey');
       var keypairStub = {
         getPublicKey: sinon.stub().returns(testPubkey),
         getPrivateKey: sinon.stub().returns(testPrivkey)
-      }
+      };
       storjStub.utils = {
         existsSync: sinon.stub().returns(false)
       };
@@ -243,28 +269,33 @@ describe('account', function() {
       Account.login();
 
       expect(fsStub.writeFileSync.callCount).to.equal(2);
-      expect(fsStub.writeFileSync.calledWithMatch(testIdPath, credentials.email)).to.be.ok;
-      expect(fsStub.writeFileSync.calledWithMatch(testKeyPath, testPrivkey)).to.be.ok;
+      expect(fsStub.writeFileSync.calledWithMatch(testIdPath,
+          credentials.email)).to.be.ok;
+      expect(fsStub.writeFileSync.calledWithMatch(testKeyPath,
+        testPrivkey)).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('info', 'This device has been successfully paired')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info',
+        'This device has been successfully paired')).to.be.ok;
     });
   });
 
   describe('#logout', function() {
-    it('should log a warning if there is a problem revoking the key, but should still unpair the key', function() {
+    it('should log a warning if there is a problem revoking the key, but ' +
+      'should still unpair the key', function() {
       var errorMessage = 'This is an error.';
       var testIdPath = '/test/id/path';
       var testKeyPath = '/test/key/path';
       var testPubkey = 'test public key';
       var keypairStub = {
         getPublicKey: sinon.stub().returns(testPubkey)
-      }
+      };
       var PrivateClientStub = {
         destroyPublicKey: function(publicKey, cb) {
           cb({message: errorMessage});
         }
       };
-      var destroyPublicKeySpy = sinon.spy(PrivateClientStub, 'destroyPublicKey');
+      var destroyPublicKeySpy = sinon.spy(PrivateClientStub,
+        'destroyPublicKey');
       storjStub.utils = {
         existsSync: sinon.stub().returns(true)
       };
@@ -282,25 +313,26 @@ describe('account', function() {
       expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.be.ok;
       expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(3);
-      expect(LoggerStub.log.calledWithMatch('info', 'This device has been successfully unpaired.')).to.be.ok;
-      expect(LoggerStub.log.calledWithMatch('warn', 'Failed to revoke key')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info',
+        'This device has been successfully unpaired.')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('warn',
+        'Failed to revoke key')).to.be.ok;
       expect(LoggerStub.log.calledWithMatch('warn', errorMessage)).to.be.ok;
     });
 
-    it('should successfully revoke and unpair the key if there is no error', function() {
-      var errorMessage = 'This is an error.';
+    it('should successfully revoke and unpair the key if there is no error',
+      function() {
       var testIdPath = '/test/id/path';
       var testKeyPath = '/test/key/path';
       var testPubkey = 'test public key';
       var keypairStub = {
         getPublicKey: sinon.stub().returns(testPubkey)
-      }
+      };
       var PrivateClientStub = {
         destroyPublicKey: function(publicKey, cb) {
           cb();
         }
       };
-      var destroyPublicKeySpy = sinon.spy(PrivateClientStub, 'destroyPublicKey');
       storjStub.utils = {
         existsSync: sinon.stub().returns(true)
       };
@@ -316,12 +348,14 @@ describe('account', function() {
       expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.be.ok;
       expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('info', 'This device has been successfully unpaired.')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info',
+        'This device has been successfully unpaired.')).to.be.ok;
     });
   });
 
   describe('#resetpassword', function() {
-    it('should log an error if there is a problem resetting the password', function() {
+    it('should log an error if there is a problem resetting the password',
+      function() {
       var errorMessage = 'This is an error.';
       var testEmail = 'testemail@something.com';
       var testPassword = 'testpassword';
@@ -339,13 +373,16 @@ describe('account', function() {
       Account.resetpassword(testEmail);
 
       expect(resetPasswordSpy.callCount).to.equal(1);
-      expect(resetPasswordSpy.calledWithMatch({email: testEmail, password: testPassword})).to.be.ok;
+      expect(resetPasswordSpy.calledWithMatch({email: testEmail,
+        password: testPassword})).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', 'Failed to request password reset', [errorMessage])).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        'Failed to request password reset',
+        [errorMessage])).to.be.ok;
     });
 
-    it('should log a success message if the password reset request succeeds', function() {
-      var errorMessage = 'This is an error.';
+    it('should log a success message if the password reset request succeeds',
+      function() {
       var testEmail = 'testemail@something.com';
       var testPassword = 'testpassword';
       utilsStub.getNewPassword = function(prompt, cb) {
@@ -362,9 +399,11 @@ describe('account', function() {
       Account.resetpassword(testEmail);
 
       expect(resetPasswordSpy.callCount).to.equal(1);
-      expect(resetPasswordSpy.calledWithMatch({email: testEmail, password: testPassword})).to.be.ok;
+      expect(resetPasswordSpy.calledWithMatch({email: testEmail,
+        password: testPassword})).to.be.ok;
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('info', 'Password reset request processed')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info',
+        'Password reset request processed')).to.be.ok;
     });
   });
 });
