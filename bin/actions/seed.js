@@ -8,7 +8,7 @@ module.exports.generateSeed = function() {
   var keypass = this._storj.getKeyPass();
   utils.getKeyRing(keypass, function(keyring) {
     try {
-      keyring.generateHDKey();
+      keyring.generateDeterministicKey();
       log('info', 'Seed successfully generated');
     } catch(err) {
       log('error', err.message);
@@ -60,7 +60,7 @@ module.exports.importSeed = function() {
 module.exports.deleteSeed = function() {
   var keypass = this._storj.getKeyPass();
   utils.getKeyRing(keypass, function(keyring) {
-    keyring.deleteHDKey();
+    keyring.deleteDeterministicKey();
     log('info', 'Mnemonic successfully deleted');
   });
 };
