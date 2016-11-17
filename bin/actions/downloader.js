@@ -41,26 +41,21 @@ function Downloader(client, fileid, bucketid, options) {
  */
 Downloader.prototype._validate = function() {
   // Don't overwrite a file that already exists
+  // Make sure if the path ends with the folder, that folder exists
   if (storj.utils.existsSync(this.filepath)) {
     assert(
       !fs.statSync(this.filepath).isFile(),
       'Refusing to overwrite file at ' + this.filepath
     );
+  } else if (this.filepath.slice(-1) === path.sep) {
+    throw new Error(this.filepath + ' is not an existing folder');
   }
 
   // Make sure the subdirectory exists
   assert(
     storj.utils.existsSync(path.dirname(this.filepath)),
-     path.dirname(this.filepath) + ' is not an existing folder'
-   );
-
-  // If the path ends with a directory make sure it exists
-  if (this.filepath.slice(-1) === path.sep) {
-    assert(
-      fs.statSync(this.filepath).isDirectory(),
-      this.filepath + 'is not an existing folder'
-    );
-  }
+      path.dirname(this.filepath) + ' is not an existing folder'
+  );
 };
 
 /**
@@ -109,27 +104,27 @@ Downloader.prototype._determineSaveLocation = function(callback) {
     );
   }
 
+  // If _validate has successfully passed by this point, we know the following:
+  //  * The parent directory of this.filepath exists
+  //  * If this.filepath is a file, this file does not yet exist
+  //  * If this.filepath is a directory, this directory already exists
+
+  // If the filepath already exists, it must be a directory
+  // Otherwise, it must be a file
   if (storj.utils.existsSync(this.filepath)) {
-    // Check if given path is a directory
-    if (fs.statSync(this.filepath).isDirectory() && this.file !== null) {
+    // use the file name as the name of the file to be downloaded to
+    var fullpath = path.join(this.filepath,this.fileMeta.filename);
 
-      // use the file name as the name of the file to be downloaded to
-      var fullpath = path.join(this.filepath,this.fileMeta.filename);
-
-      // Make sure fullpath doesn't already exist
-      if (storj.utils.existsSync(fullpath)) {
-        return log('error', 'Refusing to overwrite file at %s', fullpath);
-      }
-
-      this.destination = fullpath;
-    } else {
-      this.destination = this.filepath;
+    // Make sure fullpath doesn't already exist
+    if (storj.utils.existsSync(fullpath)) {
+      return log('error', 'Refusing to overwrite file at %s', fullpath);
     }
-  } else if (this.filepath.slice(-1) === path.sep) {
-    return callback(new Error(this.filepath + ' is not an existing folder'));
+
+    this.destination = fullpath;
   } else {
     this.destination = this.filepath;
   }
+
   return callback(null);
 };
 
