@@ -253,7 +253,9 @@ program
   .action(actions.buckets.update.bind(program));
 
 program
-  .command('make-public <bucket-id> <public-pull> <public-push>')
+  .command('make-public <bucket-id>')
+  .option('--pull', 'make PULL operations public')
+  .option('--push', 'make PUSH operations public')
   .description('makes a specific storage bucket public, uploading bucket key to bridge')
   .action(actions.buckets.makePublic.bind(program));
 

@@ -106,7 +106,10 @@ module.exports.update = function(id, name, storage, transfer) {
   });
 };
 
-module.exports.makePublic = function(id, publicPull, publicPush) {
+module.exports.makePublic = function(id, env) {
+  var publicPush = env.push ? true : false;
+  var publicPull = env.pull ? true : false;
+
   var client = this._storj.PrivateClient();
   id = this._storj.getRealBucketId(id);
 
@@ -130,11 +133,10 @@ module.exports.makePublic = function(id, publicPull, publicPush) {
   };
 
   var permissions = [];
-  var allowed = ['1', 'true', 'yes', 'y'];
-  if (allowed.includes(publicPull.toLowerCase())) {
+  if (publicPull) {
     permissions.push('PULL');
   }
-  if (allowed.includes(publicPush.toLowerCase())) {
+  if (publicPush) {
     permissions.push('PUSH');
   }
 
