@@ -1,7 +1,9 @@
 'use strict';
+/* jshint maxstatements: 25 */
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
+
 
 var LoggerStub = {
   log: sinon.stub()
