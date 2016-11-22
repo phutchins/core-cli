@@ -44,7 +44,7 @@ describe('buckets', function() {
       Buckets.list();
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error', error.message));
     });
 
     it('should warn if the client does not have any buckets', function() {
@@ -62,7 +62,7 @@ describe('buckets', function() {
 
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('warn',
-        'You have not created any buckets.')).to.be.ok;
+        'You have not created any buckets.'));
     });
 
     it('should print the information for each bucket stored', function() {
@@ -87,7 +87,7 @@ describe('buckets', function() {
         var attributeList = [testBucket.id, testBucket.name,
           testBucket.storage, testBucket.transfer];
         expect(LoggerStub.log.calledWithMatch('info', 'ID:',
-          attributeList)).to.be.ok;
+          attributeList));
       });
     });
   });
@@ -110,7 +110,7 @@ describe('buckets', function() {
       Buckets.get(1);
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error', error.message));
     });
 
     it('should log info about the bucket with the id passed in', function() {
@@ -136,7 +136,7 @@ describe('buckets', function() {
         testBucket.storage, testBucket.transfer];
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info', 'ID:',
-        attributeList)).to.be.ok;
+        attributeList));
     });
   });
 
@@ -176,7 +176,7 @@ describe('buckets', function() {
       Buckets.remove(1, {force: true});
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error', error.message));
     });
 
     it('should log a success message if the bucket is successfully destroyed',
@@ -195,7 +195,7 @@ describe('buckets', function() {
 
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info',
-        'Bucket successfully destroyed.')).to.be.ok;
+        'Bucket successfully destroyed.'));
     });
   });
 
@@ -222,9 +222,9 @@ describe('buckets', function() {
       Buckets.add(testInfo.name, testInfo.storage, testInfo.transfer);
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error', error.message));
       expect(createBucketSpy.calledWithMatch(testInfo,
-        sinon.match.any)).to.be.ok;
+        sinon.match.any));
     });
 
     it('should log info about the new bucket when it is added', function() {
@@ -251,7 +251,7 @@ describe('buckets', function() {
       ];
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info', 'ID:',
-        newBucketInfo)).to.be.ok;
+        newBucketInfo));
     });
   });
 
@@ -280,7 +280,7 @@ describe('buckets', function() {
         testInfo.transfer);
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error', error.message));
     });
 
     it('should log info about the bucket if the bucket is successfully updated',
@@ -315,7 +315,7 @@ describe('buckets', function() {
       ];
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info', 'ID:',
-        updatedBucketInfo)).to.be.ok;
+        updatedBucketInfo));
     });
   });
 
@@ -338,7 +338,7 @@ describe('buckets', function() {
       Buckets.createtoken(testId, 'pull');
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error', error.message));
     });
 
     it('should log info about the token if it is successfully created',
@@ -365,9 +365,9 @@ describe('buckets', function() {
       var newTokenInfo = [testToken, testId, 'pull'];
       expect(LoggerStub.log.callCount).to.equal(2);
       expect(LoggerStub.log.calledWithMatch('info',
-        'Token successfully created.')).to.be.ok;
+        'Token successfully created.'));
       expect(LoggerStub.log.calledWithMatch('info','Token:',
-        newTokenInfo)).to.be.ok;
+        newTokenInfo));
     });
   });
 });
