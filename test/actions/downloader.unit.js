@@ -184,7 +184,7 @@ describe('contacts', function() {
       };
 
       downloader._getInfo(function(err) {
-        expect(err);
+        expect(err).to.be.ok;
         expect(err.message).to.equal(errorMsg);
       });
     });
@@ -208,8 +208,8 @@ describe('contacts', function() {
 
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info', sinon.match.any,
-        [filename, mimetype, size, id]));
-      expect(downloader._stripISOString.calledWithMatch(filename));
+        [filename, mimetype, size, id])).to.be.ok;
+      expect(downloader._stripISOString.calledWithMatch(filename)).to.be.ok;
       expect(downloader.fileMeta.filename).to.equal(filename);
       expect(downloader.fileMeta.mimetype).to.equal(mimetype);
       expect(downloader.fileMeta.size).to.equal(size);
