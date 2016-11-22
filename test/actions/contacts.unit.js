@@ -44,7 +44,8 @@ describe('contacts', function() {
       Contacts.list(1);
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        error.message)).to.equal(true);
     });
 
     it('should log a warning if there are no contacts', function() {
@@ -61,7 +62,7 @@ describe('contacts', function() {
 
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('warn',
-        'There are no contacts to show')).to.be.ok;
+        'There are no contacts to show')).to.equal(true);
     });
 
     it('should log info about each contact that is returned', function() {
@@ -90,11 +91,11 @@ describe('contacts', function() {
       contactList.forEach(function(contact) {
         var protocol = contact.protocol || '?';
         expect(LoggerStub.log.calledWithMatch('info', 'Contact:   ' +
-          contact.name)).to.be.ok;
+          contact.name)).to.equal(true);
         expect(LoggerStub.log.calledWithMatch('info', 'Last Seen: ' +
-          contact.lastSeen)).to.be.ok;
+          contact.lastSeen)).to.equal(true);
         expect(LoggerStub.log.calledWithMatch('info', 'Protocol:  ' +
-          protocol)).to.be.ok;
+          protocol)).to.equal(true);
       });
     });
   });
@@ -116,7 +117,8 @@ describe('contacts', function() {
       Contacts.get(1);
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', error.message)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        error.message)).to.equal(true);
     });
 
     it('should log info about the contact if there is no error', function() {
@@ -145,11 +147,11 @@ describe('contacts', function() {
       expect(LoggerStub.log.callCount).to.equal(3);
       var protocol = contact.protocol || '?';
       expect(LoggerStub.log.calledWithMatch('info', 'Contact',
-        [contact.name])).to.be.ok;
+        [contact.name])).to.equal(true);
       expect(LoggerStub.log.calledWithMatch('info', 'Last Seen',
-        [contact.lastSeen])).to.be.ok;
+        [contact.lastSeen])).to.equal(true);
       expect(LoggerStub.log.calledWithMatch('info', 'Protocol',
-        [protocol])).to.be.ok;
+        [protocol])).to.equal(true);
     });
   });
 });

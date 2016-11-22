@@ -1,4 +1,5 @@
 'use strict';
+/* jshint maxstatements: 25 */
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
@@ -52,7 +53,8 @@ describe('account', function() {
       Account.getInfo();
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        errorMessage)).to.equal(true);
     });
 
     it('should log out title, description, version, and host of the client ' +
@@ -80,13 +82,13 @@ describe('account', function() {
 
       expect(LoggerStub.log.callCount).to.equal(4);
       expect(LoggerStub.log.calledWithMatch('info', 'Title',
-        [info.info.title])).to.be.ok;
+        [info.info.title])).to.equal(true);
       expect(LoggerStub.log.calledWithMatch('info', 'Description',
-        [info.info.description])).to.be.ok;
+        [info.info.description])).to.equal(true);
       expect(LoggerStub.log.calledWithMatch('info', 'Version',
-        [info.info.version])).to.be.ok;
+        [info.info.version])).to.equal(true);
       expect(LoggerStub.log.calledWithMatch('info', 'Host',
-        [info.host])).to.be.ok;
+        [info.host])).to.equal(true);
     });
   });
 
@@ -102,7 +104,8 @@ describe('account', function() {
       Account.register();
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        errorMessage)).to.equal(true);
     });
 
     it('should log an error if there is a problem creating a new user',
@@ -129,9 +132,10 @@ describe('account', function() {
 
       expect(createUserSpy.callCount).to.equal(1);
       expect(createUserSpy.calledWithMatch({'email': credentials.email,
-        'password': credentials.password})).to.be.ok;
+        'password': credentials.password})).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        errorMessage)).to.equal(true);
     });
 
     it('should log a "Registered" message when a user is successfully created',
@@ -157,9 +161,10 @@ describe('account', function() {
 
       expect(createUserSpy.callCount).to.equal(1);
       expect(createUserSpy.calledWithMatch({'email': credentials.email,
-        'password': credentials.password})).to.be.ok;
+        'password': credentials.password})).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('info', 'Registered')).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('info',
+        'Registered')).to.equal(true);
     });
   });
 
@@ -174,10 +179,11 @@ describe('account', function() {
       Account.login();
 
       expect(storjStub.utils.existsSync.callCount).to.equal(1);
-      expect(storjStub.utils.existsSync.calledWithMatch(keyPath)).to.be.ok;
+      expect(storjStub.utils.existsSync.calledWithMatch(keyPath))
+        .to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('error',
-        'This device is already paired.')).to.be.ok;
+        'This device is already paired.')).to.equal(true);
     });
 
     it('should log an error if there is an problem getting the user\'s ' +
@@ -194,7 +200,8 @@ describe('account', function() {
       Account.login();
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        errorMessage)).to.equal(true);
     });
 
     it('should log an error if there is a problem adding a new public key to ' +
@@ -229,11 +236,12 @@ describe('account', function() {
 
       expect(storjStub.BridgeClient.callCount).to.equal(1);
       expect(storjStub.BridgeClient.calledWithMatch(testUrl,
-        {basicAuth: credentials})).to.be.ok;
+        {basicAuth: credentials})).to.equal(true);
       expect(addPubKeySpy.callCount).to.equal(1);
-      expect(addPubKeySpy.calledWithMatch(testPubkey)).to.be.ok;
+      expect(addPubKeySpy.calledWithMatch(testPubkey)).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', errorMessage)).to.be.ok;
+      expect(LoggerStub.log.calledWithMatch('error',
+        errorMessage)).to.equal(true);
     });
 
     it('should successfully log in a user if there are no errors', function() {
@@ -270,12 +278,12 @@ describe('account', function() {
 
       expect(fsStub.writeFileSync.callCount).to.equal(2);
       expect(fsStub.writeFileSync.calledWithMatch(testIdPath,
-          credentials.email)).to.be.ok;
+          credentials.email)).to.equal(true);
       expect(fsStub.writeFileSync.calledWithMatch(testKeyPath,
-        testPrivkey)).to.be.ok;
+        testPrivkey)).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info',
-        'This device has been successfully paired')).to.be.ok;
+        'This device has been successfully paired')).to.equal(true);
     });
   });
 
@@ -308,16 +316,17 @@ describe('account', function() {
       Account.logout();
 
       expect(destroyPublicKeySpy.callCount).to.equal(1);
-      expect(destroyPublicKeySpy.calledWithMatch(testPubkey)).to.be.ok;
+      expect(destroyPublicKeySpy.calledWithMatch(testPubkey)).to.equal(true);
       expect(fsStub.unlinkSync.callCount).to.equal(2);
-      expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.be.ok;
-      expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.be.ok;
+      expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.equal(true);
+      expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(3);
       expect(LoggerStub.log.calledWithMatch('info',
-        'This device has been successfully unpaired.')).to.be.ok;
+        'This device has been successfully unpaired.')).to.equal(true);
       expect(LoggerStub.log.calledWithMatch('warn',
-        'Failed to revoke key')).to.be.ok;
-      expect(LoggerStub.log.calledWithMatch('warn', errorMessage)).to.be.ok;
+        'Failed to revoke key')).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('warn',
+        errorMessage)).to.equal(true);
     });
 
     it('should successfully revoke and unpair the key if there is no error',
@@ -345,11 +354,11 @@ describe('account', function() {
       Account.logout();
 
       expect(fsStub.unlinkSync.callCount).to.equal(2);
-      expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.be.ok;
-      expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.be.ok;
+      expect(fsStub.unlinkSync.calledWithMatch(testIdPath)).to.equal(true);
+      expect(fsStub.unlinkSync.calledWithMatch(testKeyPath)).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info',
-        'This device has been successfully unpaired.')).to.be.ok;
+        'This device has been successfully unpaired.')).to.equal(true);
     });
   });
 
@@ -374,11 +383,11 @@ describe('account', function() {
 
       expect(resetPasswordSpy.callCount).to.equal(1);
       expect(resetPasswordSpy.calledWithMatch({email: testEmail,
-        password: testPassword})).to.be.ok;
+        password: testPassword})).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('error',
         'Failed to request password reset',
-        [errorMessage])).to.be.ok;
+        [errorMessage])).to.equal(true);
     });
 
     it('should log a success message if the password reset request succeeds',
@@ -400,10 +409,10 @@ describe('account', function() {
 
       expect(resetPasswordSpy.callCount).to.equal(1);
       expect(resetPasswordSpy.calledWithMatch({email: testEmail,
-        password: testPassword})).to.be.ok;
+        password: testPassword})).to.equal(true);
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info',
-        'Password reset request processed')).to.be.ok;
+        'Password reset request processed')).to.equal(true);
     });
   });
 });
