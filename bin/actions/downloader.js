@@ -117,7 +117,11 @@ Downloader.prototype._determineSaveLocation = function(callback) {
 
     // Make sure fullpath doesn't already exist
     if (storj.utils.existsSync(fullpath)) {
-      return log('error', 'Refusing to overwrite file at %s', fullpath);
+      return callback(
+        new Error(
+          'Refusing to overwrite file at ' + fullpath
+        )
+      );
     }
 
     this.destination = fullpath;

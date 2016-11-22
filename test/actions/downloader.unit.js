@@ -1,4 +1,5 @@
 'use strict';
+/* jshint maxstatements: 25 */
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
@@ -33,7 +34,7 @@ var testOptions = {
   }
 };
 
-describe('contacts', function() {
+describe('downloader', function() {
   beforeEach(function() {
     LoggerStub.log.reset();
     for (var k in storjStub) {
@@ -183,10 +184,15 @@ describe('contacts', function() {
         cb(new Error(errorMsg));
       };
 
-      downloader._getInfo(function(err) {
-        expect(err).to.be.ok;
-        expect(err.message).to.equal(errorMsg);
-      });
+      var cb = sinon.stub();
+      downloader._getInfo(cb);
+
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.not.equal(null);
+      expect(err.message).to.contain(errorMsg);
+
+
     });
 
     it('should save the file metadata returned by the client', function() {
@@ -204,12 +210,17 @@ describe('contacts', function() {
         cb(null, testFile);
       };
 
-      downloader._getInfo(function() {});
+      var cb = sinon.stub();
+      downloader._getInfo(cb);
 
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.equal(null);
       expect(LoggerStub.log.callCount).to.equal(1);
       expect(LoggerStub.log.calledWithMatch('info', sinon.match.any,
-        [filename, mimetype, size, id])).to.be.ok;
-      expect(downloader._stripISOString.calledWithMatch(filename)).to.be.ok;
+        [filename, mimetype, size, id])).to.equal(true);
+      expect(downloader._stripISOString.calledWithMatch(filename))
+        .to.equal(true);
       expect(downloader.fileMeta.filename).to.equal(filename);
       expect(downloader.fileMeta.mimetype).to.equal(mimetype);
       expect(downloader.fileMeta.size).to.equal(size);
@@ -218,22 +229,95 @@ describe('contacts', function() {
   });
 
   describe('#_determineSaveLocation', function() {
-    it('should return an error if the file does not exist', function() {
+    before(function() {
+      sandbox = sinon.sandbox.create();
+      var oldValidate = Downloader.prototype._validate;
+      Downloader.prototype._validate = sinon.stub();
+      downloader = new Downloader(testClient, testFileId, testBucketId,
+        testOptions);
+      Downloader.prototype._validate = oldValidate;
+      sandbox.spy(Downloader.prototype, '_determineSaveLocation');
+    });
+    beforeEach(function() {
+      Downloader.prototype._determineSaveLocation.reset();
+    });
+    after(function() {
+      sandbox.restore();
+    });
 
+    it('should return an error if the file does not exist', function() {
+      downloader.fileMeta = null;
+
+      var cb = sinon.stub();
+      downloader._determineSaveLocation(cb);
+
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.not.equal(null);
+      expect(err.message).to.contain('file ' + testFileId +
+        ' does not exist in bucket ' + testBucketId);
     });
 
     it('should return an error if filepath is a directory and ' +
       'filepath + filename already exists', function() {
+      downloader.filepath = '/test/file/path/';
+      downloader.fileMeta = {
+        filename: 'testfilename.ext'
+      };
+      var fullpath = downloader.filepath + downloader.fileMeta.filename;
 
+      storjStub.utils = {
+        existsSync: sinon.stub().returns(true)
+      };
+
+      var cb = sinon.stub();
+      downloader._determineSaveLocation(cb);
+
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.not.equal(null);
+      expect(err.message).to.contain('Refusing to overwrite file at ' +
+        fullpath);
     });
 
     it('should properly set the destination if filepath is a directory and ' +
       'filepath + filename does not exist', function() {
+      downloader.filepath = '/test/file/path/';
+      downloader.fileMeta = {
+        filename: 'testfilename.ext'
+      };
+      var fullpath = downloader.filepath + downloader.fileMeta.filename;
 
+      storjStub.utils = {
+        existsSync: sinon.stub()
+      };
+      storjStub.utils.existsSync.onCall(0).returns(true);
+      storjStub.utils.existsSync.onCall(1).returns(false);
+
+      var cb = sinon.stub();
+      downloader._determineSaveLocation(cb);
+
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.equal(null);
+      expect(downloader.destination).to.equal(fullpath);
     });
 
     it('should properly set the destination if filepath is a file', function() {
+      downloader.filepath = '/test/file/path.ext';
+      downloader.fileMeta = {};
 
+      storjStub.utils = {
+        existsSync: sinon.stub().returns(false)
+      };
+
+      var cb = sinon.stub();
+      downloader._determineSaveLocation(cb);
+
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.equal(null);
+      expect(downloader.destination).to.equal(downloader.filepath);
     });
   });
 
