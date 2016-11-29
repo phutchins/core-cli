@@ -34,7 +34,7 @@
     "node": "^6.9.1"
   },
   "dependencies": {
-    "storj-lib": "^6.0.0",
+    "storj-lib": "bookchin/storj-core",
     "async": "^1.5.2",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
