@@ -192,12 +192,13 @@ Downloader.prototype._handleFileStream = function(stream, callback) {
       }
 
       if (!err.pointer) {
-        return;
+        return callback(new Error('Failed to download file'));
       }
 
       log('info', 'Retrying download from other mirrors...');
       var exclude = self.exclude.split(',');
       exclude.push(err.pointer.farmer.nodeID);
+      self.exclude = exclude.join(',');
       self.start(self.finalCallback);
     });
   }).pipe(through(function(chunk) {

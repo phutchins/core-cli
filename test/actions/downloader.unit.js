@@ -3,19 +3,22 @@
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
+var stream = require('stream');
 
 var LoggerStub = {
   log: sinon.stub()
 };
 var storjStub = {};
 var fsStub = {};
+var utilsStub = {};
 
 var Downloader = proxyquire('../../bin/actions/downloader.js', {
   './../logger': function() {
     return LoggerStub;
   },
   'storj-lib': storjStub,
-  'fs': fsStub
+  'fs': fsStub,
+  './../utils': utilsStub
 });
 
 var downloader;
@@ -30,7 +33,7 @@ var testOptions = {
   filepath: '/test/filepath/testfile.extension',
   keypass: 'test keypass',
   env: {
-    exclude: 'test exclude'
+    exclude: 'a,b,c,d'
   }
 };
 
@@ -236,10 +239,6 @@ describe('downloader', function() {
       downloader = new Downloader(testClient, testFileId, testBucketId,
         testOptions);
       Downloader.prototype._validate = oldValidate;
-      sandbox.spy(Downloader.prototype, '_determineSaveLocation');
-    });
-    beforeEach(function() {
-      Downloader.prototype._determineSaveLocation.reset();
     });
     after(function() {
       sandbox.restore();
@@ -322,17 +321,154 @@ describe('downloader', function() {
   });
 
   describe('#_getKeyRing', function() {
-    it('should save the keyring returned by utils', function() {
+    before(function() {
+      sandbox = sinon.sandbox.create();
+      var oldValidate = Downloader.prototype._validate;
+      Downloader.prototype._validate = sinon.stub();
+      downloader = new Downloader(testClient, testFileId, testBucketId,
+        testOptions);
+      Downloader.prototype._validate = oldValidate;
+    });
+    after(function() {
+      sandbox.restore();
+    });
 
+    it('should save the keyring returned by utils', function() {
+      var testKeyRing = 'testkeyring';
+      downloader.keypass = 'testkeypass';
+      utilsStub.getKeyRing = function(keypass, cb) {
+        cb(testKeyRing);
+      };
+      sinon.spy(utilsStub, 'getKeyRing');
+
+      var cb = sinon.stub();
+      downloader._getKeyRing(cb);
+
+      expect(utilsStub.getKeyRing.callCount).to.equal(1);
+      var pass = utilsStub.getKeyRing.getCall(0).args[0];
+      expect(pass).to.equal(downloader.keypass);
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.equal(null);
+      expect(downloader.keyring).to.equal(testKeyRing);
     });
   });
 
   describe('#_createFileStream', function() {
+    before(function() {
+      sandbox = sinon.sandbox.create();
+      var oldValidate = Downloader.prototype._validate;
+      Downloader.prototype._validate = sinon.stub();
+      downloader = new Downloader(testClient, testFileId, testBucketId,
+        testOptions);
+      Downloader.prototype._validate = oldValidate;
+    });
+    after(function() {
+      sandbox.restore();
+    });
 
+    it('should call the final callback when the download is complete',
+      function() {
+      var testDest = '/test/destination/file.ext';
+      downloader.destination = testDest;
+      var writableMock = stream.Writable();
+      fsStub.createWriteStream = function() {
+        return writableMock;
+      };
+      sinon.spy(fsStub, 'createWriteStream');
+      clientStub.createFileStream = sinon.stub();
+
+      var cb = sinon.stub();
+      var finalCb = sinon.stub();
+      downloader.finalCallback = finalCb;
+      downloader._createFileStream(cb);
+      writableMock.emit('finish');
+
+      expect(fsStub.createWriteStream.callCount).to.equal(1);
+      expect(fsStub.createWriteStream.calledWithMatch(testDest)).to.equal(true);
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('info',
+        'File downloaded and written to',
+        [downloader.destination])).to.equal(true);
+      expect(finalCb.callCount).to.equal(1);
+      expect(finalCb.calledWithMatch(null, testDest)).to.equal(true);
+    });
+
+    it('should pass an error to the callback if there is an error with ' +
+      'the write stream', function() {
+      var testDest = '/test/destination/file.ext';
+      downloader.destination = testDest;
+      var writableMock = stream.Writable();
+      fsStub.createWriteStream = function() {
+        return writableMock;
+      };
+      sinon.spy(fsStub, 'createWriteStream');
+      clientStub.createFileStream = sinon.stub();
+
+      var cb = sinon.stub();
+      downloader._createFileStream(cb);
+      var errMsg = 'this is an error';
+      writableMock.emit('error', new Error(errMsg));
+
+      expect(fsStub.createWriteStream.callCount).to.equal(1);
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.not.equal(null);
+      expect(err.message).to.contain(errMsg);
+    });
+
+    it('should create a file stream from the client to be used ' +
+      'in _handleFileStream', function() {
+      var testDest = '/test/destination/file.ext';
+      downloader.destination = testDest;
+      var writableMock = stream.Writable();
+      fsStub.createWriteStream = function() {
+        return writableMock;
+      };
+      clientStub.createFileStream = sinon.stub();
+
+      var cb = sinon.stub();
+      downloader._createFileStream(cb);
+
+      expect(clientStub.createFileStream.callCount).to.equal(1);
+      var exclude = testOptions.env.exclude.split(',');
+      var expectedArgs = [testBucketId, testFileId, {exclude: exclude}, cb];
+      var actualArgs = clientStub.createFileStream.getCall(0).args;
+      expect(expectedArgs).to.deep.equal(actualArgs);
+    });
   });
 
   describe('#_handleFileStream', function() {
+    it('should pass an error to the callback if no decryption key is found',
+      function() {
 
+    });
+
+    it('should pass an error to the callback if the download fails and the ' +
+      'attempt to unlink the local file fails', function() {
+
+    });
+
+    it('should pass an error to the callback if the download fails and there ' +
+      'is no pointer variable on the resulting error', function() {
+
+    });
+
+    it('should modify the exclusion list and retry the download if the ' +
+      'download fails and there is a pointer variable on the resulting error',
+      function() {
+
+    });
+
+    it('should log information about the download progress for each ' +
+      'chunk downloaded', function() {
+
+    });
+
+    it('should pipe the download through the decrypter and the ' +
+      'file write stream', function() {
+
+    });
   });
 
   describe('#start', function() {
