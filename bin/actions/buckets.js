@@ -123,7 +123,7 @@ module.exports.makePublic = function(id, env) {
       }
       var updatedPull = bucket.publicPermissions.includes('PULL');
       var updatedPush = bucket.publicPermissions.includes('PUSH');
-      var key = bucket.encryptionKey.length == 0 ? null : bucket.encryptionKey;
+      var key = bucket.encryptionKey.length === 0 ? null : bucket.encryptionKey;
       log(
         'info',
         'ID: %s, Name: %s, Public Pull: %s, Public Push: %s, Key: %s',
@@ -140,7 +140,7 @@ module.exports.makePublic = function(id, env) {
     permissions.push('PUSH');
   }
 
-  if (permissions.length == 0) {
+  if (permissions.length === 0) {
     return _finish([], '');
   }
 

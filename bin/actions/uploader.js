@@ -221,14 +221,16 @@ Uploader.prototype._makeTempDir = function(filepath, callback) {
     log('info', 'Encrypting file "%s"', [filepath]);
 
     var fileId = storj.utils.calculateFileId(self.bucket, filename);
+    var secret;
 
     if (token.encryptionKey) {
       // generate file key based on public encryptionKey
-      var fileKey = storj.DeterministicKeyIv.getDeterministicKey(token.encryptionKey, fileId);
-      var secret = new storj.DeterministicKeyIv(fileKey, fileId);
+      var fileKey = storj.DeterministicKeyIv.getDeterministicKey(
+        token.encryptionKey, fileId);
+      secret = new storj.DeterministicKeyIv(fileKey, fileId);
     } else {
       // generate file key based on private
-      var secret = self.keyring.generateFileKey(self.bucket, fileId);
+      secret = self.keyring.generateFileKey(self.bucket, fileId);
     }
 
     self.fileMeta[filepath] = {
