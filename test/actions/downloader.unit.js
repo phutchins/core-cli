@@ -1,5 +1,5 @@
 'use strict';
-/* jshint maxstatements: 25 */
+/* jshint maxstatements: 30 */
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
@@ -439,35 +439,225 @@ describe('downloader', function() {
   });
 
   describe('#_handleFileStream', function() {
+    before(function() {
+      sandbox = sinon.sandbox.create();
+      var oldValidate = Downloader.prototype._validate;
+      Downloader.prototype._validate = sinon.stub();
+      downloader = new Downloader(testClient, testFileId, testBucketId,
+        testOptions);
+      Downloader.prototype._validate = oldValidate;
+    });
+    after(function() {
+      sandbox.restore();
+    });
+
     it('should pass an error to the callback if no decryption key is found',
       function() {
+      var errMsg = 'No decryption key found in key ring';
+      var readableMock = stream.Readable();
+      downloader.keyring = {
+        get: sinon.stub().returns(null)
+      };
 
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      expect(downloader.keyring.get.callCount).to.equal(1);
+      expect(downloader.keyring.get.calledWith(testFileId)).to.equal(true);
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.not.equal(null);
+      expect(err.message).to.contain(errMsg);
     });
 
     it('should pass an error to the callback if the download fails and the ' +
       'attempt to unlink the local file fails', function() {
+      var errMsg = 'Failed to unlink partial file';
+      var testSecret = 'test secret';
+      var decryptStream = stream.Transform();
+      var readableMock = stream.Readable();
+      var writableMock = stream.Writable();
+      var testDestination = '/test/destination';
 
+      downloader.keyring = {
+        get: sinon.stub().returns(testSecret)
+      };
+      storjStub.DecryptStream = sinon.stub().returns(decryptStream);
+      downloader.target = writableMock;
+      downloader.destination = testDestination;
+      fsStub.unlink = function(destination, cb) {
+        cb(true);
+      };
+      sinon.spy(fsStub, 'unlink');
+
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      var readableErrMsg = 'test readable error message';
+      readableMock.emit('error', new Error(readableErrMsg));
+
+      expect(storjStub.DecryptStream.callCount).to.equal(1);
+      expect(storjStub.DecryptStream.calledWith(testSecret)).to.equal(true);
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('warn',
+        'Failed to download shard', [readableErrMsg])).to.equal(true);
+      expect(fsStub.unlink.callCount).to.equal(1);
+      expect(fsStub.unlink.calledWith(testDestination)).to.equal(true);
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.not.equal(null);
+      expect(err.message).to.contain(errMsg);
     });
 
     it('should pass an error to the callback if the download fails and there ' +
       'is no pointer variable on the resulting error', function() {
+      var errMsg = 'Failed to download file';
+      var testSecret = 'test secret';
+      var decryptStream = stream.Transform();
+      var readableMock = stream.Readable();
+      var writableMock = stream.Writable();
+      var testDestination = '/test/destination';
 
+      downloader.keyring = {
+        get: sinon.stub().returns(testSecret)
+      };
+      storjStub.DecryptStream = sinon.stub().returns(decryptStream);
+      downloader.target = writableMock;
+      downloader.destination = testDestination;
+      fsStub.unlink = function(destination, cb) {
+        cb();
+      };
+      sinon.spy(fsStub, 'unlink');
+
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      var readableErrMsg = 'test readable error message';
+      readableMock.emit('error', new Error(readableErrMsg));
+
+      expect(storjStub.DecryptStream.callCount).to.equal(1);
+      expect(storjStub.DecryptStream.calledWith(testSecret)).to.equal(true);
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('warn',
+        'Failed to download shard', [readableErrMsg])).to.equal(true);
+      expect(fsStub.unlink.callCount).to.equal(1);
+      expect(fsStub.unlink.calledWith(testDestination)).to.equal(true);
+      expect(cb.callCount).to.equal(1);
+      var err = cb.getCall(0).args[0];
+      expect(err).to.not.equal(null);
+      expect(err.message).to.contain(errMsg);
     });
 
     it('should modify the exclusion list and retry the download if the ' +
       'download fails and there is a pointer variable on the resulting error',
       function() {
+      var testSecret = 'test secret';
+      var decryptStream = stream.Transform();
+      var readableMock = stream.Readable();
+      var writableMock = stream.Writable();
+      var testDestination = '/test/destination';
 
+      downloader.keyring = {
+        get: sinon.stub().returns(testSecret)
+      };
+      storjStub.DecryptStream = sinon.stub().returns(decryptStream);
+      downloader.target = writableMock;
+      downloader.destination = testDestination;
+      fsStub.unlink = function(destination, cb) {
+        cb();
+      };
+      sinon.spy(fsStub, 'unlink');
+      downloader.start = sinon.stub();
+      downloader.finalCallback = sinon.stub();
+
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      var readableErrMsg = 'test readable error message';
+      var err = new Error(readableErrMsg);
+      err.pointer = {
+        farmer: {
+          nodeID: 'e'
+        }
+      };
+      readableMock.emit('error', err);
+
+      expect(storjStub.DecryptStream.callCount).to.equal(1);
+      expect(storjStub.DecryptStream.calledWith(testSecret)).to.equal(true);
+      expect(LoggerStub.log.callCount).to.equal(2);
+      expect(LoggerStub.log.calledWithMatch('warn',
+        'Failed to download shard', [readableErrMsg])).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('info',
+        'Retrying download')).to.equal(true);
+      expect(fsStub.unlink.callCount).to.equal(1);
+      expect(fsStub.unlink.calledWith(testDestination)).to.equal(true);
+      expect(downloader.exclude).to.equal(testOptions.env.exclude + ',e');
+      expect(downloader.start.callCount).to.equal(1);
+      expect(downloader.start.calledWith(downloader.finalCallback))
+        .to.equal(true);
     });
 
     it('should log information about the download progress for each ' +
-      'chunk downloaded', function() {
+      'chunk downloaded', function(done) {
+      var testSecret = 'test secret';
+      var decryptStream = stream.PassThrough();
+      var readableMock = stream.Readable({read: sinon.stub()});
+      readableMock._length = 21;
+      var writableMock = stream.Writable({write: sinon.stub().callsArg(2)});
+      var testDestination = '/test/destination';
 
+      downloader.keyring = {
+        get: sinon.stub().returns(testSecret)
+      };
+      storjStub.DecryptStream = sinon.stub().returns(decryptStream);
+      downloader.target = writableMock;
+      downloader.destination = testDestination;
+
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      readableMock.push('teststring');
+      readableMock.push('teststring2');
+      readableMock.push(null);
+
+      downloader.target.on('finish', function() {
+        expect(storjStub.DecryptStream.callCount).to.equal(1);
+        expect(storjStub.DecryptStream.calledWith(testSecret)).to.equal(true);
+        expect(LoggerStub.log.callCount).to.equal(2);
+        expect(LoggerStub.log.calledWithMatch('info', 'Received %s of %s bytes',
+          [10, 21])).to.equal(true);
+        expect(LoggerStub.log.calledWithMatch('info', 'Received %s of %s bytes',
+          [21, 21])).to.equal(true);
+        done();
+      });
     });
 
     it('should pipe the download through the decrypter and the ' +
-      'file write stream', function() {
+      'file write stream', function(done) {
+      var testSecret = 'test secret';
+      var decryptStream = stream.PassThrough();
+      var readableMock = stream.Readable({read: sinon.stub()});
+      readableMock._length = 21;
+      var writableMock = stream.Writable({write: sinon.stub().callsArg(2)});
+      var testDestination = '/test/destination';
 
+      downloader.keyring = {
+        get: sinon.stub().returns(testSecret)
+      };
+      storjStub.DecryptStream = sinon.stub().returns(decryptStream);
+      downloader.target = writableMock;
+      downloader.destination = testDestination;
+
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      readableMock.push('teststring');
+      readableMock.push('teststring2');
+      readableMock.push(null);
+
+      downloader.target.on('finish', function() {
+        done();
+      });
     });
   });
 

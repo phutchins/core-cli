@@ -179,7 +179,7 @@ Downloader.prototype._handleFileStream = function(stream, callback) {
   var secret = this.keyring.get(this.fileid);
 
   if (!secret) {
-    return log('error', 'No decryption key found in key ring!');
+    return callback(new Error('No decryption key found in key ring!'));
   }
 
   var decrypter = new storj.DecryptStream(secret);
