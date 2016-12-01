@@ -37,10 +37,10 @@
   ],
   "license": "(LGPL-3.0)",
   "engines": {
-    "node": "^4.4.4"
+    "node": "^6.9.1"
   },
   "dependencies": {
-    "storj-lib": "^5.0.0",
+    "storj-lib": "^5.1.0",
     "async": "^1.5.2",
     "colors": "^1.1.2",
     "commander": "^2.9.0",

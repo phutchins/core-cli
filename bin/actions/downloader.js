@@ -176,8 +176,14 @@ Downloader.prototype._createFileStream = function(callback) {
 Downloader.prototype._handleFileStream = function(stream, callback) {
   var self = this;
   var received = 0;
-  var secret = this.keyring.get(this.fileid);
 
+  if (stream.encryptionKey) {
+    var fileKey = storj.DeterministicKeyIv.getDeterministicKey(stream.encryptionKey, self.fileid);
+    var secret = new storj.DeterministicKeyIv(fileKey, self.fileid);
+  } else {
+    var secret = this.keyring.get(this.fileid, this.bucket);
+  }
+  
   if (!secret) {
     return callback(new Error('No decryption key found in key ring!'));
   }
