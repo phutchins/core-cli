@@ -316,7 +316,6 @@ program
   .command('upload-file <bucket-id> <filepath>')
   .option('-c, --concurrency <count>', 'max shard upload concurrency')
   .option('-C, --fileconcurrency <count>', 'max file upload concurrency', 1)
-  .option('-r, --redundancy <mirrors>', 'number of mirrors to create for file')
   .option('-u, --user <user>', 'user id for public name resolution', null)
   .description('upload a file or files to the network and track in a bucket.' +
                '\n  upload all files in a single directory using "/path/*"\n' +
