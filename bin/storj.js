@@ -302,6 +302,11 @@ program
   .action(actions.files.list.bind(program));
 
 program
+  .command('list-mirrors <bucket-id> <file-id>')
+  .description('list the files in a specific storage bucket')
+  .action(actions.files.listMirrors.bind(program));
+
+program
   .command('remove-file <bucket-id> <file-id>')
   .option('-f, --force', 'skip confirmation prompt')
   .description('delete a file pointer from a specific bucket')
