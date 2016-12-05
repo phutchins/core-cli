@@ -54,21 +54,22 @@ module.exports.listMirrors = function(bucketid, fileid) {
       return log('error', err.message);
     }
 
-    log('info', 'Established:');
-    log('info', '');
-    mirrors.established.forEach((s, i) => {
-      log('info', 'Shard %s: (%s), Mirrors:', [i, s[0].shardHash]);
-      s.forEach((m) => {
-        log('info', '    %s', [storj.utils.createContactURL(m.contact)]);
+    mirrors.forEach((s, i) => {
+      log('info', '');
+      log('info', 'Shard %s: (%s), Established:', [i, s[0].shardHash]);
+      s.established.forEach((s, i) => {
+        s.forEach((m) => {
+          log('info', '    %s', [storj.utils.createContactURL(m.contact)]);
+        });
       });
-    });
-    log('info', '');
-    log('info', 'Available:');
-    log('info', '');
-    mirrors.available.forEach((s, i) => {
-      log('info', 'Shard %s: (%s), Mirrors:', [i, s[0].shardHash]);
-      s.forEach((m) => {
-        log('info', '    %s', [storj.utils.createContactURL(m.contact)]);
+      log('info', '');
+      log('info', 'Available:');
+      log('info', '');
+      s.available.forEach((s, i) => {
+        log('info', 'Shard %s: (%s), Mirrors:', [i, s[0].shardHash]);
+        s.forEach((m) => {
+          log('info', '    %s', [storj.utils.createContactURL(m.contact)]);
+        });
       });
     });
   });
