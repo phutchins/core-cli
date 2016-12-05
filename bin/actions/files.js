@@ -56,16 +56,16 @@ module.exports.listMirrors = function(bucketid, fileid) {
 
     mirrors.forEach((s, i) => {
       log('info', '');
-      log('info', 'Shard %s: (%s), Established:', [i]);
+      log('info', 'Shard %s, Established:', [i]);
       s.established.forEach((s, i) => {
         if (i === 0) log('info', 'Hash: %s', [s.shardHash]);
-        log('info', '    %s', [storj.utils.createContactURL(s.contact)]);
+        log('info', '    %s', [storj.utils.getContactURL(s.contact)]);
       });
       log('info', '');
-      log('info', 'Shard %s: (%s), Mirrors:', [i]);
+      log('info', 'Shard %s, Mirrors:', [i]);
       s.available.forEach((s, i) => {
         if (i === 0) log('info', 'Hash: %s', [s.shardHash]);
-        log('info', '    %s', [storj.utils.createContactURL(s.contact)]);
+        log('info', '    %s', [storj.utils.getContactURL(s.contact)]);
       });
     });
   });
