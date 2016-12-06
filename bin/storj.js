@@ -303,7 +303,7 @@ program
 
 program
   .command('list-mirrors <bucket-id> <file-id>')
-  .description('list the files in a specific storage bucket')
+  .description('list the mirrors for a given file')
   .action(actions.files.listMirrors.bind(program));
 
 program
@@ -313,16 +313,11 @@ program
   .action(actions.files.remove.bind(program));
 
 program
-  .command('upload-file <bucket-id> <filepath>')
+  .command('upload-file <bucket-id> <file-glob>')
   .option('-c, --concurrency <count>', 'max shard upload concurrency')
   .option('-C, --fileconcurrency <count>', 'max file upload concurrency', 1)
   .option('-u, --user <user>', 'user id for public name resolution', null)
-  .description('upload a file or files to the network and track in a bucket.' +
-               '\n  upload all files in a single directory using "/path/*"\n' +
-               '  or upload recursively using "/path/**/*".\n' +
-               '  <filepath> can be a path with wildcard or a space separated' +
-               ' list of files.'
-             )
+  .description('upload a file or files to the network and track in a bucket')
   .action(ACTIONS.upload);
 
 program
