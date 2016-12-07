@@ -17,7 +17,6 @@ var monitor = require('os-monitor');
  * @param {String} keypass - Password for unlocking keyring.
  * @param {Number} options.env.concurrency - shard upload concurrency.
  * @param {Number} options.env.fileconcurrency - File upload concurrency.
- * @param {Number} options.env.redundancy - Number of mirrors per shard.
  * @param {String} options.bucket - Bucket files are uploaded to.
  * @param {String} options.filepath - Path of files being uploaded.
  */
@@ -32,7 +31,6 @@ function Uploader(client, bucket, options) {
                     3;
   this.fileConcurrency = options.env.fileconcurrency || 1;
   this.bucket = bucket;
-  this.redundancy = options.env.redundancy || 0;
   this.client = client(
     {
       transferConcurrency: this.shardConcurrency,
@@ -64,19 +62,7 @@ Uploader.prototype._validate = function() {
     );
   }
 
-  if (this.redundancy === 0) {
-    log(
-      'warn',
-      'A redundancy of %s means files will not be mirrored!',
-      [ this.redundancy ]
-    );
-  }
-
   assert(this.fileConcurrency >= 1, 'File Concurrency cannot be less than 1');
-  assert(
-    ((parseInt(this.redundancy) <= 12) || (parseInt(this.redundancy) >= 0)),
-    this.redundancy + ' is an invalid Redundancy value.'
-  );
   assert(this.fileCount >= 1, '0 files specified to be uploaded.');
 };
 
@@ -346,10 +332,6 @@ Uploader.prototype._storeFileInBucket = function(filepath, callback) {
         [file.filename, file.mimetype, file.size, file.id]
       );
 
-      if (self.redundancy && self.redundancy > 0) {
-        self._mirror(file.id);
-      }
-
       self.uploadedCount++;
 
       log(
@@ -365,33 +347,6 @@ Uploader.prototype._storeFileInBucket = function(filepath, callback) {
 
       self.nextFileCallback[filepath]();
 
-    }
-  );
-};
-
-/**
- * Mirror files
- * @param {String} fileid - id of file to be mirrored
- * @private
- */
-Uploader.prototype._mirror = function(fileid) {
-  this.client.replicateFileFromBucket(
-    this.bucket,
-    fileid,
-    parseInt(this.redundancy),
-    function(err, replicas) {
-      if (err) {
-        return log('error', err.message);
-      }
-
-      replicas.forEach(function(shard, i) {
-        log('info', 'Shard %s establishing mirrors to %s nodes', [
-          i,
-          shard.length
-        ]);
-      });
-
-      return;
     }
   );
 };
