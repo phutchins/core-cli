@@ -116,7 +116,6 @@ module.exports.stream = function(bucket, id, env) {
   var keypass = this._storj.getKeyPass();
   bucket = this._storj.getRealBucketId(bucket);
   id = this._storj.getRealFileId(bucket, id);
-
   utils.getKeyRing(keypass, function(keyring) {
     var secret = keyring.get(id);
 
@@ -126,10 +125,9 @@ module.exports.stream = function(bucket, id, env) {
 
     var decrypter = new storj.DecryptStream(secret);
     var exclude = env.exclude.split(',');
-
     client.createFileStream(bucket, id, function(err, stream) {
       if (err) {
-        return process.stderr.write(err.message);
+        return log('error', err.message);
       }
 
       stream.on('error', function(err) {
@@ -145,7 +143,7 @@ module.exports.stream = function(bucket, id, env) {
           self,
           bucket,
           id,
-          { exclude: env.exclude.join(',') }
+          { exclude: exclude.join(',') }
         );
       }).pipe(decrypter).pipe(process.stdout);
     });
