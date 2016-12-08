@@ -378,10 +378,10 @@ program
   .description('change the keyring password')
   .action(utils.changekeyring.bind(program));
 
-  program
-    .command('reset-keyring')
-    .description('delete the current keyring and start a new one')
-    .action(utils.resetkeyring.bind(program));
+program
+  .command('reset-keyring')
+  .description('delete the current keyring and start a new one')
+  .action(utils.resetkeyring.bind(program));
 
 program
   .command('sign-message <privatekey> <message>')
