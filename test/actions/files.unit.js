@@ -284,13 +284,14 @@ describe('files', function() {
     });
   });
 
-  describe('#mirror', function() {
-    it('should log an error if redundancy is greater than 12', function() {
-      var testBucketId = 'testbucketid';
-      var testFileId = 'testfileid';
+  describe('#listMirrors', function() {
+    it('should log an error if the client responds with one', function() {
+      var errMsg = 'this is an error';
+      var bucketId = 'testbucketid';
+      var fileId = 'testfileid';
 
       var clientStub = {
-        replicateFileFromBucket: sinon.stub().callsArg(3)
+        listMirrorsForFile: sinon.stub().callsArgWith(2, new Error(errMsg))
       };
       Files._storj = {
         PrivateClient: function() {
@@ -300,79 +301,45 @@ describe('files', function() {
         getRealFileId: sinon.stub().returnsArg(1)
       };
 
-      var env = {redundancy: 13};
-      Files.mirror(testBucketId, testFileId, env);
+      Files.listMirrors(bucketId, fileId);
 
       expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', 'invalid Redundancy value',
-        env.redundancy)).to.equal(true);
-    });
-
-    it('should log an error if redundancy is less than 1', function() {
-      var testBucketId = 'testbucketid';
-      var testFileId = 'testfileid';
-      var errMsg = 'this is an error';
-
-      var clientStub = {
-        replicateFileFromBucket: sinon.stub().callsArgWith(3,
-          new Error(errMsg))
-      };
-      Files._storj = {
-        PrivateClient: function() {
-          return clientStub;
-        },
-        getRealBucketId: sinon.stub().returnsArg(0),
-        getRealFileId: sinon.stub().returnsArg(1)
-      };
-
-      var env = {redundancy: 3};
-      Files.mirror(testBucketId, testFileId, env);
-
-      expect(clientStub.replicateFileFromBucket.callCount).to.equal(1);
-      expect(clientStub.replicateFileFromBucket.calledWithMatch(
-        testBucketId, testFileId, env.redundancy, sinon.match.func
-      )).to.equal(true);
-      expect(LoggerStub.log.callCount).to.equal(2);
-      expect(LoggerStub.log.calledWithMatch('info',
-        'Establishing %s mirrors per shard for redundancy',
-        [env.redundancy])).to.equal(true);
       expect(LoggerStub.log.calledWithMatch('error', errMsg)).to.equal(true);
     });
 
-    it('should log an error if the client responds with one', function() {
-      var testBucketId = 'testbucketid';
-      var testFileId = 'testfileid';
-
-      var clientStub = {
-        replicateFileFromBucket: sinon.stub().callsArg(3)
-      };
-      Files._storj = {
-        PrivateClient: function() {
-          return clientStub;
+    it('should list information about established and available shards ' +
+      'for each mirror', function() {
+      var bucketId = 'testbucketid';
+      var fileId = 'testfileid';
+      var mirrorInfo = [
+        {
+          established: [
+            {shardHash: 'testShardHash1', contact: 'testContact1'},
+            {contact: 'testContact2'},
+            {contact: 'testContact3'}
+          ],
+          available: [
+            {shardHash: 'testShardHash2', contact: 'testContact4'},
+            {contact: 'testContact5'},
+            {contact: 'testContact6'}
+          ]
         },
-        getRealBucketId: sinon.stub().returnsArg(0),
-        getRealFileId: sinon.stub().returnsArg(1)
-      };
-
-      var env = {redundancy: 0};
-      Files.mirror(testBucketId, testFileId, env);
-
-      expect(LoggerStub.log.callCount).to.equal(1);
-      expect(LoggerStub.log.calledWithMatch('error', 'invalid Redundancy value',
-        env.redundancy)).to.equal(true);
-    });
-
-    it('should log information about each mirrored shard', function() {
-      var testBucketId = 'testbucketid';
-      var testFileId = 'testfileid';
-      // TODO determine format of 'replicas' returned by replicateFileFromBucket
-      var replicas = [
-        ['node1', 'node2', 'node3'],
-        ['node4', 'node5', 'node6']
+        {
+          established: [
+            {shardHash: 'testShardHash3', contact: 'testContact7'},
+            {contact: 'testContact8'},
+            {contact: 'testContact9'}
+          ],
+          available: [
+            {shardHash: 'testShardHash4', contact: 'testContact10'},
+            {contact: 'testContact11'},
+            {contact: 'testContact12'}
+          ]
+        },
       ];
 
       var clientStub = {
-        replicateFileFromBucket: sinon.stub().callsArgWith(3, null, replicas)
+        listMirrorsForFile: sinon.stub().callsArgWith(2, null, mirrorInfo)
       };
       Files._storj = {
         PrivateClient: function() {
@@ -381,26 +348,32 @@ describe('files', function() {
         getRealBucketId: sinon.stub().returnsArg(0),
         getRealFileId: sinon.stub().returnsArg(1)
       };
-      process.exit = sinon.stub();
+      storjStub.utils = {
+        getContactURL: sinon.stub().returnsArg(0)
+      };
 
-      var env = {redundancy: 3};
-      Files.mirror(testBucketId, testFileId, env);
+      Files.listMirrors(bucketId, fileId);
 
-      expect(clientStub.replicateFileFromBucket.callCount).to.equal(1);
-      expect(clientStub.replicateFileFromBucket.calledWithMatch(
-        testBucketId, testFileId, env.redundancy, sinon.match.func
-      )).to.equal(true);
-      expect(LoggerStub.log.callCount).to.equal(1 + replicas.length);
-      expect(LoggerStub.log.calledWithMatch('info',
-        'Establishing %s mirrors per shard for redundancy',
-        [env.redundancy])).to.equal(true);
-      for (var i in replicas) {
-        var nextShard = replicas[i];
+      mirrorInfo.forEach((mirror, i) => {
         expect(LoggerStub.log.calledWithMatch('info',
-          'Shard %s establishing mirrors to %s nodes',
-          [parseInt(i), nextShard.length])).to.equal(true);
-      }
-      expect(process.exit.callCount).to.equal(1);
+          'Shard', [i])).to.equal(true);
+        mirror.established.forEach((established, j) => {
+          if (j === 0) {
+            expect(LoggerStub.log.calledWithMatch('info',
+              'Hash', [established.shardHash])).to.equal(true);
+          }
+          expect(LoggerStub.log.calledWithMatch('info',
+            '', [established.contact])).to.equal(true);
+        });
+        mirror.established.forEach((available, j) => {
+          if (j === 0) {
+            expect(LoggerStub.log.calledWithMatch('info',
+              'Hash', [available.shardHash])).to.equal(true);
+          }
+          expect(LoggerStub.log.calledWithMatch('info',
+            '', [available.contact])).to.equal(true);
+        });
+      });
     });
   });
 
