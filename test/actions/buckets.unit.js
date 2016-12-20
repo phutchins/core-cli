@@ -324,6 +324,96 @@ describe('buckets', function() {
     });
   });
 
+  describe('#makePublic', function() {
+    it('should log an error if the client responds with one', function() {
+      var errMsg = 'this is an error';
+      var testId = 'testid';
+      var testEnv = {push: false, pull: false};
+      var testKeyPass = 'testkeypass';
+      var testBucketKey = 'testbucketkey';
+      var PrivateClientStub = {
+        updateBucketById: sinon.stub().callsArgWith(2, new Error(errMsg))
+      };
+      Buckets._storj = {
+        PrivateClient: sinon.stub().returns(PrivateClientStub),
+        getRealBucketId: sinon.stub().returnsArg(0),
+        getKeyPass: sinon.stub().returns(testKeyPass)
+      };
+      var testKeyRing = {
+        generateBucketKey: sinon.stub().returns(testBucketKey)
+      };
+      utilsStub.getKeyRing = sinon.stub().callsArgWith(1, testKeyRing);
+
+      Buckets.makePublic(testId, testEnv);
+
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('error', errMsg)).to.equal(true);
+    });
+
+    it('should log the new permissions if the bucket is updated', function() {
+      var testId = 'testid';
+      var testEnv = {push: true, pull: true};
+      var testKeyPass = 'testkeypass';
+      var testBucketKey = 'testbucketkey';
+      var testBucket = {
+        id: testId,
+        name: 'testname',
+        publicPermissions: ['PULL', 'PUSH'],
+        encryptionKey: 'testencryptionkey'
+      };
+      var PrivateClientStub = {
+        updateBucketById: sinon.stub().callsArgWith(2, null, testBucket)
+      };
+      Buckets._storj = {
+        PrivateClient: sinon.stub().returns(PrivateClientStub),
+        getRealBucketId: sinon.stub().returnsArg(0),
+        getKeyPass: sinon.stub().returns(testKeyPass)
+      };
+      var testKeyRing = {
+        generateBucketKey: sinon.stub().returns(testBucketKey)
+      };
+      utilsStub.getKeyRing = sinon.stub().callsArgWith(1, testKeyRing);
+
+      Buckets.makePublic(testId, testEnv);
+
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('info',
+        'ID: %s, Name: %s, Public Pull: %s, Public Push: %s, Key: %s',
+        [testId, 'testname', true, true, 'testencryptionkey'])).to.equal(true);
+    });
+
+    it('should log an error if no key can be generated from the id',
+      function() {
+      var testId = 'testid';
+      var testEnv = {push: true, pull: true};
+      var testKeyPass = 'testkeypass';
+      var testBucket = {
+        id: testId,
+        name: 'testname',
+        publicPermissions: ['PULL', 'PUSH'],
+        encryptionKey: 'testencryptionkey'
+      };
+      var PrivateClientStub = {
+        updateBucketById: sinon.stub().callsArgWith(2, null, testBucket)
+      };
+      Buckets._storj = {
+        PrivateClient: sinon.stub().returns(PrivateClientStub),
+        getRealBucketId: sinon.stub().returnsArg(0),
+        getKeyPass: sinon.stub().returns(testKeyPass)
+      };
+      var testKeyRing = {
+        generateBucketKey: sinon.stub().returns(null)
+      };
+      utilsStub.getKeyRing = sinon.stub().callsArgWith(1, testKeyRing);
+
+      Buckets.makePublic(testId, testEnv);
+
+      expect(LoggerStub.log.callCount).to.equal(1);
+      expect(LoggerStub.log.calledWithMatch('error',
+        'You must generate a deterministic seed')).to.equal(true);
+    });
+  });
+
   describe('#createtoken', function() {
     it('should log an error if the client responds with one', function() {
       var error = {
