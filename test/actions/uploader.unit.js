@@ -1,8 +1,9 @@
 'use strict';
-/* jshint maxstatements: 30 */
+/* jshint maxstatements: 35 */
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
+var stream = require('stream');
 
 var sandbox;
 
@@ -14,6 +15,7 @@ var clientStub = {};
 var fsStub = {};
 var storjStub = {};
 var globuleStub = {};
+var monitorStub = {};
 
 var testClient = sinon.stub().returns(clientStub);
 var testBucket = 'testbucket';
@@ -38,7 +40,8 @@ var Uploader = proxyquire('../../bin/actions/uploader.js', {
   './../utils': utilsStub,
   'fs': fsStub,
   'globule': globuleStub,
-  'storj-lib': storjStub
+  'storj-lib': storjStub,
+  'os-monitor': monitorStub
 });
 
 var uploader;
@@ -489,22 +492,389 @@ describe('uploader', function() {
   });
 
   describe('#_createReadStream', function() {
+    it('should call back with an error if the stream pipeline emits one',
+      function() {
+      var err = new Error('this is an error');
+      var testFilePath = '/test/file/path';
+      var testTmpPath = '/test/tmp/path';
+      var cb = sinon.stub();
+      var readableMock = stream.Readable({read: sinon.stub()});
+      var writableMock = stream.Writable({write: sinon.stub().callsArg(2)});
+      var testEncrypter = stream.PassThrough();
+      fsStub.createReadStream = sinon.stub().returns(readableMock);
+      fsStub.createWriteStream = sinon.stub().returns(writableMock);
+      uploader.fileMeta[testFilePath] = {
+        tmppath: testTmpPath,
+        encrypter: testEncrypter,
+        filename: 'testfilename.xyz'
+      };
 
+      uploader._createReadStream(testFilePath, cb);
+
+      writableMock.emit('error', err);
+
+      expect(fsStub.createReadStream.calledWithMatch(testFilePath))
+        .to.equal(true);
+      expect(fsStub.createWriteStream.calledWithMatch(testTmpPath))
+        .to.equal(true);
+      expect(cb.callCount).to.equal(1);
+      expect(cb.calledWithMatch(err, testFilePath)).to.equal(true);
+    });
+
+    it('should log a success message and call back when the stream pipeline ' +
+      'completes', function(done) {
+      var testFilePath = '/test/file/path';
+      var testTmpPath = '/test/tmp/path';
+      var cb = sinon.stub();
+      var readableMock = stream.Readable({read: sinon.stub()});
+      var writableMock = stream.Writable({write: sinon.stub().callsArg(2)});
+      var testEncrypter = stream.PassThrough();
+      fsStub.createReadStream = sinon.stub().returns(readableMock);
+      fsStub.createWriteStream = sinon.stub().returns(writableMock);
+      uploader.fileMeta[testFilePath] = {
+        tmppath: testTmpPath,
+        encrypter: testEncrypter,
+        filename: 'testfilename.xyz'
+      };
+
+      uploader._createReadStream(testFilePath, cb);
+
+      readableMock.push('hello');
+      readableMock.push(null);
+
+      setTimeout(function() {
+        expect(fsStub.createReadStream.calledWithMatch(testFilePath))
+          .to.equal(true);
+        expect(fsStub.createWriteStream.calledWithMatch(testTmpPath))
+          .to.equal(true);
+        expect(LoggerStub.log.callCount).to.equal(1);
+        expect(LoggerStub.log.calledWithMatch('info', 'Encryption complete',
+          uploader.fileMeta[testFilePath].filename)).to.equal(true);
+        expect(cb.callCount).to.equal(1);
+        expect(cb.calledWithMatch(null, testFilePath)).to.equal(true);
+        done();
+      }, 50);
+    });
   });
 
   describe('#_createToken', function() {
+    it('should callback with an error if it retries more than six times',
+      function() {
+      var err = new Error('this is an error');
+      clientStub.createToken = sinon.stub().callsArgWith(2, err);
+      var testFilePath = '/test/file/path';
+      var testBucket = 'testbucket';
+      var cb = sinon.stub();
+      uploader.bucket = testBucket;
 
+      uploader._createToken(testFilePath, cb);
+
+      expect(clientStub.createToken.callCount).to.equal(7);
+      expect(clientStub.createToken.calledWithMatch(testBucket, 'PUSH',
+        sinon.match.func)).to.equal(true);
+      expect(cb.callCount).to.equal(1);
+      expect(cb.calledWithMatch(err, testFilePath)).to.equal(true);
+    });
+
+    it('should properly set token and callback on success', function() {
+      var testToken = 'testtoken';
+      clientStub.createToken = sinon.stub().callsArgWith(2, null, testToken);
+      var testFilePath = '/test/file/path';
+      var testBucket = 'testbucket';
+      var cb = sinon.stub();
+      uploader.bucket = testBucket;
+
+      uploader._createToken(testFilePath, cb);
+
+      expect(clientStub.createToken.callCount).to.equal(1);
+      expect(clientStub.createToken.calledWithMatch(testBucket, 'PUSH',
+        sinon.match.func)).to.equal(true);
+      expect(cb.callCount).to.equal(1);
+      expect(cb.calledWithMatch(null, testFilePath)).to.equal(true);
+      expect(uploader.token).to.equal(testToken);
+    });
   });
 
   describe('#_storeFileInBucket', function() {
+    beforeEach(function() {
+      uploader.oldCleanup = uploader._cleanup;
+      uploader._cleanup = sinon.stub();
+    });
+    afterEach(function() {
+      uploader._cleanup = uploader.oldCleanup;
+    });
 
+    it('should callback with an error if the client responds with one',
+      function() {
+      var testFilePath = '/test/file/path';
+      var cb = sinon.stub();
+      var testToken = {token: 'testtoken'};
+      var testBucket = 'testbucket';
+      var testFileName = 'testfilename.xyz';
+      var testTmpPath = '/test/tmp/path';
+      var testSecret = 'testsecret';
+      var tmpCleanup = sinon.stub();
+      uploader.token = testToken;
+      uploader.bucket = testBucket;
+      uploader.fileMeta[testFilePath] = {
+        filename: testFileName,
+        tmppath: testTmpPath,
+        secret: testSecret,
+        tmpCleanup: tmpCleanup
+      };
+      var err = new Error('this is an error');
+      clientStub.storeFileInBucket = sinon.stub().callsArgWith(3, err);
+
+      uploader._storeFileInBucket(testFilePath, cb);
+
+      expect(clientStub.storeFileInBucket.calledWithMatch(testBucket,
+        testToken.token, testTmpPath)).to.equal(true);
+      expect(LoggerStub.log.callCount).to.equal(2);
+      expect(LoggerStub.log.calledWithMatch('info', 'Storing file',
+        testFileName)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('warn', 'Error occurred',
+        testFileName)).to.equal(true);
+      expect(cb.callCount).to.equal(1);
+      expect(cb.calledWithMatch(err, testFilePath)).to.equal(true);
+    });
+
+    it('should delete temporary file information and call the next file ' +
+      'callback upon successful upload', function() {
+      var testFilePath = '/test/file/path';
+      var cb = sinon.stub();
+      var nextFileCallback = sinon.stub();
+      var testToken = {token: 'testtoken'};
+      var testBucket = 'testbucket';
+      var testFileName = 'testfilename.xyz';
+      var testId = 'testid';
+      var testMimetype = 'text/plain';
+      var testSize = 10;
+      var testTmpPath = '/test/tmp/path';
+      var testSecret = 'testsecret';
+      var tmpCleanup = sinon.stub();
+      uploader.token = testToken;
+      uploader.bucket = testBucket;
+      uploader.fileMeta[testFilePath] = {
+        filename: testFileName,
+        tmppath: testTmpPath,
+        secret: testSecret,
+        tmpCleanup: tmpCleanup
+      };
+      uploader.keyring = {
+        set: sinon.stub()
+      };
+      uploader.nextFileCallback = {};
+      uploader.nextFileCallback[testFilePath] = nextFileCallback;
+      var testFile = {
+        filename: testFileName,
+        id: testId,
+        mimetype: testMimetype,
+        size: testSize
+      };
+      clientStub.storeFileInBucket = sinon.stub().callsArgWith(3,
+        null, testFile);
+
+      uploader.uploadedCount = 0;
+      uploader.fileCount = 3;
+      uploader._storeFileInBucket(testFilePath, cb);
+
+      expect(clientStub.storeFileInBucket.calledWithMatch(testBucket,
+        testToken.token, testTmpPath)).to.equal(true);
+      expect(LoggerStub.log.callCount).to.equal(5);
+      expect(LoggerStub.log.calledWithMatch('info', 'Storing file',
+        testFileName)).to.equal(true);
+      expect(uploader.keyring.set.calledWithMatch(testId,
+        testSecret)).to.equal(true);
+      expect(uploader._cleanup.callCount).to.equal(1);
+      expect(uploader._cleanup.calledWithMatch(testFileName,
+        sinon.match.func)).to.equal(true);
+      expect(uploader.fileMeta[testFilePath]).to.equal(undefined);
+      expect(uploader.uploadedCount).to.equal(1);
+      expect(nextFileCallback.callCount).to.equal(1);
+    });
+
+    it('should callback when all files have been uploaded', function() {
+      var testFilePath = '/test/file/path';
+      var cb = sinon.stub();
+      var nextFileCallback = sinon.stub();
+      var testToken = {token: 'testtoken'};
+      var testBucket = 'testbucket';
+      var testFileName = 'testfilename.xyz';
+      var testId = 'testid';
+      var testMimetype = 'text/plain';
+      var testSize = 10;
+      var testTmpPath = '/test/tmp/path';
+      var testSecret = 'testsecret';
+      var tmpCleanup = sinon.stub();
+      uploader.token = testToken;
+      uploader.bucket = testBucket;
+      uploader.fileMeta[testFilePath] = {
+        filename: testFileName,
+        tmppath: testTmpPath,
+        secret: testSecret,
+        tmpCleanup: tmpCleanup
+      };
+      uploader.keyring = {
+        set: sinon.stub()
+      };
+      uploader.nextFileCallback = {};
+      uploader.nextFileCallback[testFilePath] = nextFileCallback;
+      var testFile = {
+        filename: testFileName,
+        id: testId,
+        mimetype: testMimetype,
+        size: testSize
+      };
+      clientStub.storeFileInBucket = sinon.stub().callsArgWith(3,
+        null, testFile);
+
+      uploader.uploadedCount = 2;
+      uploader.fileCount = 3;
+      uploader._storeFileInBucket(testFilePath, cb);
+
+      expect(clientStub.storeFileInBucket.calledWithMatch(testBucket,
+        testToken.token, testTmpPath)).to.equal(true);
+      expect(LoggerStub.log.callCount).to.equal(6);
+      expect(LoggerStub.log.calledWithMatch('info', 'Storing file',
+        testFileName)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('info', 'Done')).to.equal(true);
+      expect(uploader.keyring.set.calledWithMatch(testId,
+        testSecret)).to.equal(true);
+      expect(uploader._cleanup.callCount).to.equal(1);
+      expect(uploader._cleanup.calledWithMatch(testFileName,
+        sinon.match.func)).to.equal(true);
+      expect(uploader.fileMeta[testFilePath]).to.equal(undefined);
+      expect(uploader.uploadedCount).to.equal(3);
+      expect(cb.callCount).to.equal(1);
+      expect(cb.calledWithMatch(null, testFilePath)).to.equal(true);
+    });
   });
 
   describe('#_handleFailure', function() {
+    before(function() {
+      uploader.oldCleanup = uploader._cleanup;
+      uploader._cleanup = sinon.stub();
+    });
+    after(function() {
+      uploader._cleanup = uploader.oldCleanup;
+    });
 
+    it('should call _cleanup for every file', function() {
+      uploader.fileMeta = {
+        '/test/path/1': {
+          filename: 'testfilename1',
+          tmpCleanup: sinon.stub()
+        },
+        '/test/path/2': {
+          filename: 'testfilename1',
+          tmpCleanup: sinon.stub()
+        },
+        '/test/path/3': {
+          filename: 'testfilename1',
+          tmpCleanup: sinon.stub()
+        }
+      };
+      monitorStub.stop = sinon.stub();
+
+      uploader._handleFailure();
+
+      var keys = Object.keys(uploader.fileMeta);
+      expect(monitorStub.stop.callCount).to.equal(1);
+      expect(uploader._cleanup.callCount).to.equal(keys.length);
+      keys.forEach(function(key) {
+        var nextFile = uploader.fileMeta[key];
+        expect(uploader._cleanup.calledWithMatch(nextFile.filename,
+          sinon.match.func)).to.equal(true);
+      });
+    });
   });
 
   describe('#start', function() {
+    beforeEach(function() {
+      var testFilePath = '/test/file/path';
+      uploader._getKeyRing = sinon.stub().callsArg(0);
+      uploader._loopThroughFiles = sinon.stub().callsArgWith(0,
+        null, testFilePath);
+      uploader._checkFileExistence = sinon.stub().callsArgWith(1,
+        null, testFilePath);
+      uploader._createToken = sinon.stub().callsArgWith(1,
+        null, testFilePath);
+      uploader._makeTempDir = sinon.stub().callsArgWith(1,
+        null, testFilePath);
+      uploader._createReadStream = sinon.stub().callsArgWith(1,
+        null, testFilePath);
+      uploader._storeFileInBucket = sinon.stub().callsArgWith(1,
+        null, testFilePath);
+    });
 
+    it('should call all necessary functions for uploading files in ' +
+      'the correct order', function(done) {
+      monitorStub.start = sinon.stub();
+      monitorStub.on = sinon.stub();
+
+      var finalCb = function() {
+        expect(monitorStub.start.calledWithMatch({delay: 3000,
+          freemem: 8000000})).to.equal(true);
+        expect(monitorStub.on.calledWithMatch('freemem',
+          sinon.match.func)).to.equal(true);
+
+        expect(uploader._getKeyRing.callCount).to.equal(1);
+        expect(uploader._getKeyRing.calledBefore(
+          uploader._loopThroughFiles)).to.equal(true);
+        expect(uploader._loopThroughFiles.callCount).to.equal(1);
+        expect(uploader._loopThroughFiles.calledBefore(
+          uploader._checkFileExistence)).to.equal(true);
+        expect(uploader._checkFileExistence.callCount).to.equal(1);
+        expect(uploader._checkFileExistence.calledBefore(
+          uploader._createToken)).to.equal(true);
+        expect(uploader._createToken.callCount).to.equal(1);
+        expect(uploader._createToken.calledBefore(
+          uploader._makeTempDir)).to.equal(true);
+        expect(uploader._makeTempDir.callCount).to.equal(1);
+        expect(uploader._makeTempDir.calledBefore(
+          uploader._createReadStream)).to.equal(true);
+        expect(uploader._createReadStream.callCount).to.equal(1);
+        expect(uploader._createReadStream.calledBefore(
+          uploader._storeFileInBucket)).to.equal(true);
+        expect(uploader._storeFileInBucket.callCount).to.equal(1);
+
+        done();
+      };
+
+      uploader.start(finalCb);
+    });
+
+    it('should handle error occurring when free memory is too low',
+      function(done) {
+      monitorStub.start = sinon.stub();
+      monitorStub.on = sinon.stub().callsArg(1);
+      uploader._getKeyRing = sinon.stub();
+      uploader._handleFailure = sinon.stub();
+
+      var finalCb = function(err) {
+        expect(err.message).to.equal('Not enough free memory to continue!');
+        expect(uploader._handleFailure.callCount).to.equal(1);
+        done();
+      };
+
+      uploader.start(finalCb);
+    });
+
+    it('should handle errors resulting from the async waterfall callback',
+      function(done) {
+      var err = new Error('this is an error');
+      monitorStub.start = sinon.stub();
+      monitorStub.on = sinon.stub();
+      uploader._getKeyRing = sinon.stub().callsArgWith(0, err);
+      uploader._handleFailure = sinon.stub();
+
+      var finalCb = function(err) {
+        expect(err.message).to.equal('this is an error');
+        expect(uploader._handleFailure.callCount).to.equal(1);
+        done();
+      };
+
+      uploader.start(finalCb);
+    });
   });
 });
