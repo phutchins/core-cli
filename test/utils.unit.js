@@ -3,6 +3,7 @@
 var expect = require('chai').expect;
 var proxyquire = require('proxyquire');
 var sinon = require('sinon');
+var stream = require('stream');
 
 var promptStub = {};
 var tmpStub = {};
@@ -910,14 +911,275 @@ describe('utils', function() {
   });
 
   describe('#prepareaudits', function() {
+    it('should log an error if there is a problem creating the audit stream',
+      function() {
+      var num = 10;
+      var filepath = '/test/file/path';
+      var err = new Error('this is an error');
+      storjStub.AuditStream = sinon.stub().throws(err);
 
+      Utils.prepareaudits(num, filepath);
+
+      expect(storjStub.AuditStream.calledWithMatch(num)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log an error if there is a problem creating the input stream',
+      function() {
+      var num = 10;
+      var filepath = '/test/file/path';
+      var testAuditStream = stream.Writable();
+      storjStub.AuditStream = sinon.stub().returns(testAuditStream);
+      var err = new Error('this is an error');
+      fsStub.createReadStream = sinon.stub().throws(err);
+
+      Utils.prepareaudits(num, filepath);
+
+      expect(storjStub.AuditStream.calledWithMatch(num)).to.equal(true);
+      expect(fsStub.createReadStream.calledWithMatch(filepath)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log an error if the audit stream produces one',
+      function() {
+      var num = 10;
+      var filepath = '/test/file/path';
+      var testAuditStream = stream.Writable();
+      storjStub.AuditStream = sinon.stub().returns(testAuditStream);
+      var testReadStream = stream.Readable();
+      fsStub.createReadStream = sinon.stub().returns(testReadStream);
+
+      Utils.prepareaudits(num, filepath);
+
+      var err = new Error('this is an error');
+      testAuditStream.emit('error', err);
+
+      expect(storjStub.AuditStream.calledWithMatch(num)).to.equal(true);
+      expect(fsStub.createReadStream.calledWithMatch(filepath)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log information about the merkle tree when the audit completes',
+      function(done) {
+      var num = 10;
+      var filepath = '/test/file/path';
+      var testAuditStream = stream.Writable();
+      storjStub.AuditStream = sinon.stub().returns(testAuditStream);
+      var testReadStream = stream.Readable();
+      fsStub.createReadStream = sinon.stub().returns(testReadStream);
+
+      Utils.prepareaudits(num, filepath);
+
+      var privateRecord = {
+        root: 'testroot',
+        challenges: [
+          'testchallenge1',
+          'testchallenge2',
+          'testchallenge3'
+        ]
+      };
+      var publicRecord = [
+        'testleaf1',
+        'testleaf2',
+        'testleaf3'
+      ];
+      testAuditStream.getPrivateRecord = sinon.stub().returns(privateRecord);
+      testAuditStream.getPublicRecord = sinon.stub().returns(publicRecord);
+      testReadStream.push(null);
+
+      setTimeout(function() {
+        expect(storjStub.AuditStream.calledWithMatch(num)).to.equal(true);
+        expect(fsStub.createReadStream.calledWithMatch(
+          filepath)).to.equal(true);
+        expect(LoggerStub.log.calledWithMatch('info',
+          privateRecord.root)).to.equal(true);
+        privateRecord.challenges.forEach(function(challenge) {
+          expect(LoggerStub.log.calledWithMatch('info',
+            challenge)).to.equal(true);
+        });
+        publicRecord.forEach(function(leaf) {
+          expect(LoggerStub.log.calledWithMatch('info', leaf)).to.equal(true);
+        });
+        done();
+      }, 50);
+    });
   });
 
   describe('#provefile', function() {
+    it('should log an error if there is a problem creatin the proof stream',
+      function() {
+      var leaves = 'testleaf1,testleaf2,testleaf3';
+      var tree = ['testleaf1', 'testleaf2', 'testleaf3'];
+      var challenge = 'testchallenge';
+      var filepath = '/test/file/path';
+      var err = new Error('this is an error');
+      storjStub.ProofStream = sinon.stub().throws(err);
 
+      Utils.provefile(leaves, challenge, filepath);
+
+      expect(storjStub.ProofStream.calledWithMatch(tree,
+        challenge)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log an error if there is a problem creating the input stream',
+      function() {
+      var leaves = 'testleaf1,testleaf2,testleaf3';
+      var tree = ['testleaf1', 'testleaf2', 'testleaf3'];
+      var challenge = 'testchallenge';
+      var filepath = '/test/file/path';
+
+      var testProofStream = stream.Writable();
+      storjStub.ProofStream = sinon.stub().returns(testProofStream);
+      var err = new Error('this is an error');
+      fsStub.createReadStream = sinon.stub().throws(err);
+
+      Utils.provefile(leaves, challenge, filepath);
+
+      expect(storjStub.ProofStream.calledWithMatch(tree,
+        challenge)).to.equal(true);
+      expect(fsStub.createReadStream.calledWithMatch(filepath)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log an error if the proof stream emits one', function() {
+      var leaves = 'testleaf1,testleaf2,testleaf3';
+      var tree = ['testleaf1', 'testleaf2', 'testleaf3'];
+      var challenge = 'testchallenge';
+      var filepath = '/test/file/path';
+
+      var testProofStream = stream.Writable();
+      storjStub.ProofStream = sinon.stub().returns(testProofStream);
+      var testReadStream = stream.Readable();
+      fsStub.createReadStream = sinon.stub().returns(testReadStream);
+
+      Utils.provefile(leaves, challenge, filepath);
+
+      var err = new Error('this is an error');
+      testProofStream.emit('error', err);
+
+      expect(storjStub.ProofStream.calledWithMatch(tree,
+        challenge)).to.equal(true);
+      expect(fsStub.createReadStream.calledWithMatch(filepath)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log the challenge response for each piece of data piped ' +
+      'into the proof stream', function(done) {
+      var leaves = 'testleaf1,testleaf2,testleaf3';
+      var tree = ['testleaf1', 'testleaf2', 'testleaf3'];
+      var challenge = 'testchallenge';
+      var filepath = '/test/file/path';
+
+      var testProofStream = stream.Transform({transform:
+        sinon.stub().callsArg(2)});
+      storjStub.ProofStream = sinon.stub().returns(testProofStream);
+      var testReadStream = stream.Readable({read: sinon.stub()});
+      fsStub.createReadStream = sinon.stub().returns(testReadStream);
+
+      Utils.provefile(leaves, challenge, filepath);
+
+      var result = 'testresult';
+      testProofStream.push(result);
+
+      expect(storjStub.ProofStream.calledWithMatch(tree,
+        challenge)).to.equal(true);
+      expect(fsStub.createReadStream.calledWithMatch(filepath)).to.equal(true);
+      setTimeout(function() {
+        var actualResult = JSON.stringify(new Buffer(result));
+        expect(LoggerStub.log.calledWithMatch('info',
+          actualResult)).to.equal(true);
+        done();
+      }, 50);
+    });
   });
 
   describe('#verifyproof', function() {
+    it('should log an error if creation of the verifier fails', function() {
+      var root = 'testroot';
+      var depth = 10;
+      var resp = '{"response":"testresponse"}';
+      var err = new Error('this is an error');
+      storjStub.Verification = sinon.stub().throws(err);
 
+      Utils.verifyproof(root, depth, resp);
+
+      expect(storjStub.Verification.calledWithMatch(
+        JSON.parse(resp))).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log an error if the verify function fails', function() {
+      var root = 'testroot';
+      var depth = 10;
+      var resp = '{"response":"testresponse"}';
+      var err = new Error('this is an error');
+      var verifier = {
+        verify: sinon.stub().throws(err)
+      };
+      storjStub.Verification = sinon.stub().returns(verifier);
+
+      Utils.verifyproof(root, depth, resp);
+
+      expect(storjStub.Verification.calledWithMatch(
+        JSON.parse(resp))).to.equal(true);
+      expect(verifier.verify.calledWithMatch(root, depth)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        err.message)).to.equal(true);
+    });
+
+    it('should log a success message if the proof response is valid',
+      function() {
+      var root = 'testroot';
+      var depth = 10;
+      var resp = '{"response":"testresponse"}';
+      var result = [1, 1];
+      var verifier = {
+        verify: sinon.stub().returns(result)
+      };
+      storjStub.Verification = sinon.stub().returns(verifier);
+
+      Utils.verifyproof(root, depth, resp);
+
+      expect(storjStub.Verification.calledWithMatch(
+        JSON.parse(resp))).to.equal(true);
+      expect(verifier.verify.calledWithMatch(root, depth)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('info', 'Expected',
+        [result[1]])).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('info', 'Actual',
+        [result[0]])).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('info',
+        'The proof response is valid')).to.equal(true);
+    });
+
+    it('should log an error if the proof response is not valid', function() {
+      var root = 'testroot';
+      var depth = 10;
+      var resp = '{"response":"testresponse"}';
+      var result = [0, 1];
+      var verifier = {
+        verify: sinon.stub().returns(result)
+      };
+      storjStub.Verification = sinon.stub().returns(verifier);
+
+      Utils.verifyproof(root, depth, resp);
+
+      expect(storjStub.Verification.calledWithMatch(
+        JSON.parse(resp))).to.equal(true);
+      expect(verifier.verify.calledWithMatch(root, depth)).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('info', 'Expected',
+        [result[1]])).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('info', 'Actual',
+        [result[0]])).to.equal(true);
+      expect(LoggerStub.log.calledWithMatch('error',
+        'The proof response is not valid')).to.equal(true);
+    });
   });
 });
