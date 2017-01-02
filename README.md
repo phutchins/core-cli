@@ -30,7 +30,7 @@ Installation and Guides
 
 - [Install Guide for Windows, Mac, and Linux](https://github.com/Storj/core/blob/master/INSTALL.md)
 - [Getting Started with a Storj Account](http://docs.storj.io/docs/getting-started)
-- [Uploading/Downloading with the CLI tools](http://docs.storj.io/docs/uploading-and-downloading-cat)
+- [Uploading/Downloading with the CLI tools](http://docs.storj.io/docs/uploading-and-downloading-cats)
 
 
 License
