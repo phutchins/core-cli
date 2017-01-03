@@ -662,6 +662,80 @@ describe('downloader', function() {
   });
 
   describe('#start', function() {
+    before(function() {
+      sandbox = sinon.sandbox.create();
+      var oldValidate = Downloader.prototype._validate;
+      Downloader.prototype._validate = sinon.stub();
+      downloader = new Downloader(testClient, testFileId, testBucketId,
+        testOptions);
+      Downloader.prototype._validate = oldValidate;
+    });
+    beforeEach(function() {
+      downloader._getInfo = sinon.stub().callsArg(0);
+      downloader._determineSaveLocation = sinon.stub().callsArg(0);
+      downloader._getKeyRing = sinon.stub().callsArg(0);
+      downloader._createFileStream = sinon.stub().callsArgWith(0, null, {});
+      downloader._handleFileStream = sinon.stub().callsArg(1);
+    });
+    after(function() {
+      sandbox.restore();
+    });
 
+    it('should call all necessary functions for downloading files in ' +
+      'the correct order', function(done) {
+      var cb = function(err) {
+        expect(!!err).to.equal(false);
+
+        expect(downloader._getInfo.callCount).to.equal(1);
+        expect(downloader._getInfo.calledBefore(
+          downloader._determineSaveLocation)).to.equal(true);
+        expect(downloader._determineSaveLocation.callCount).to.equal(1);
+        expect(downloader._determineSaveLocation.calledBefore(
+          downloader._getKeyRing)).to.equal(true);
+        expect(downloader._getKeyRing.callCount).to.equal(1);
+        expect(downloader._getKeyRing.calledBefore(
+          downloader._createFileStream)).to.equal(true);
+        expect(downloader._createFileStream.callCount).to.equal(1);
+        expect(downloader._createFileStream.calledBefore(
+          downloader._handleFileStream)).to.equal(true);
+        expect(downloader._handleFileStream.callCount).to.equal(1);
+        done();
+      };
+
+      downloader.start(cb);
+    });
+
+    it('should unlink the file if any function throws an error',
+      function(done) {
+      var errMsg = 'this is an error';
+      downloader._getInfo = sinon.stub().callsArgWith(0, new Error(errMsg));
+      var testDest = '/test/destination';
+      downloader.destination = testDest;
+      storjStub.utils = {
+        existsSync: sinon.stub().returns(true)
+      };
+      fsStub.unlinkSync = sinon.stub();
+
+      var cb = function(err) {
+        expect(err.message).to.equal(errMsg);
+        expect(storjStub.utils.existsSync.callCount).to.equal(1);
+        expect(storjStub.utils.existsSync.calledWithMatch(testDest))
+          .to.equal(true);
+        expect(LoggerStub.log.callCount).to.equal(1);
+        expect(LoggerStub.log.calledWithMatch('info',
+          'Removing unfinished file', testDest)).to.equal(true);
+        expect(fsStub.unlinkSync.callCount).to.equal(1);
+        expect(fsStub.unlinkSync.calledWithMatch(testDest)).to.equal(true);
+
+        expect(downloader._getInfo.callCount).to.equal(1);
+        expect(downloader._determineSaveLocation.callCount).to.equal(0);
+        expect(downloader._getKeyRing.callCount).to.equal(0);
+        expect(downloader._createFileStream.callCount).to.equal(0);
+        expect(downloader._handleFileStream.callCount).to.equal(0);
+        done();
+      };
+
+      downloader.start(cb);
+    });
   });
 });

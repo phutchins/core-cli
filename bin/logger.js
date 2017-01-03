@@ -14,7 +14,7 @@ function Logger(loglevel) {
     var type = arguments[0];
     var message = arguments[1];
     var values = Array.prototype.slice.call(arguments, 2);
-    
+
     if (self._shouldLog(type) === true) {
       self.log(type, message, values);
     }
@@ -28,7 +28,6 @@ function Logger(loglevel) {
 }
 
 Logger.prototype.log = function(type, message, args) {
-
   switch (type) {
     case 'debug':
       message = colors.bold.magenta(' [debug]  ') + message;

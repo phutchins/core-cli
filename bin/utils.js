@@ -236,7 +236,7 @@ module.exports.resetkeyring = function() {
 
   function confirm() {
       module.exports.getConfirmation(
-      'Are REALLY you sure you want to destroy your keyring?',
+      'Are you REALLY sure you want to destroy your keyring?',
       destroyKeyRing
     );
   }
