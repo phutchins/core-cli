@@ -451,6 +451,60 @@ describe('downloader', function() {
       sandbox.restore();
     });
 
+    it('should use the encryption key from the stream if available',
+      function() {
+      var testEncryptionKey = 'test encryption key';
+      var testFileId = 'test file id';
+      var testFileKey = 'test file key';
+      var decryptStream = stream.Transform();
+      var readableMock = stream.Readable();
+      var writableMock = stream.Writable();
+
+      readableMock.encryptionKey = testEncryptionKey;
+      storjStub.DeterministicKeyIv = sinon.stub();
+      storjStub.DeterministicKeyIv.getDeterministicKey =
+        sinon.stub().returns(testFileKey);
+      storjStub.DecryptStream = sinon.stub().returns(decryptStream);
+      downloader.fileid = testFileId;
+      downloader.target = writableMock;
+
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      expect(storjStub.DeterministicKeyIv.getDeterministicKey
+        .calledWithMatch(testEncryptionKey, testFileId)).to.equal(true);
+      expect(storjStub.DeterministicKeyIv.calledWithMatch(testFileKey,
+        testFileId)).to.equal(true);
+      var secret = storjStub.DecryptStream.getCall(0).args[0];
+      expect(secret).to.be.instanceOf(storjStub.DeterministicKeyIv);
+    });
+
+    it('should get the secret from the keyring if the stream has no ' +
+      'encryption key', function() {
+      var testSecret = 'test secret';
+      var testFileId = 'test file id';
+      var testBucket = 'test bucket';
+      var decryptStream = stream.Transform();
+      var readableMock = stream.Readable();
+      var writableMock = stream.Writable();
+
+      storjStub.DecryptStream = sinon.stub().returns(decryptStream);
+      downloader.keyring = {
+        get: sinon.stub().returns(testSecret)
+      };
+      downloader.fileid = testFileId;
+      downloader.bucket = testBucket;
+      downloader.target = writableMock;
+
+      var cb = sinon.stub();
+      downloader._handleFileStream(readableMock, cb);
+
+      expect(downloader.keyring.get.calledWithMatch(testFileId,
+        testBucket)).to.equal(true);
+      expect(storjStub.DecryptStream.calledWithMatch(testSecret))
+        .to.equal(true);
+    });
+
     it('should pass an error to the callback if no decryption key is found',
       function() {
       var errMsg = 'No decryption key found in key ring';
