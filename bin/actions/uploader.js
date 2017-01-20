@@ -43,6 +43,7 @@ function Uploader(client, bucket, options) {
   this.uploadedCount = 0;
   this.fileMeta = [];
   this.nextFileCallback = {};
+  this.fileSize = null;
 
   this._validate();
 
@@ -173,6 +174,10 @@ Uploader.prototype._checkFileExistence = function(filepath, callback) {
   self.client.getFileInfo(self.bucket, fileId, function(err, fileInfo){
     if (fileInfo) {
       var date = (new Date().toISOString()).replace(/:/g, ';');
+
+      console.log('Setting filesize to %s', fileInfo.size);
+      self.fileSize = fileInfo.size;
+
       var newFilename = '(' + date + ')-' + filename;
       log(
         'warn',
@@ -374,6 +379,14 @@ Uploader.prototype._handleFailure = function() {
 Uploader.prototype.start = function(finalCallback) {
   var self = this;
 
+  // update this to be total time and add time for...
+  // - encryption
+  // - upload
+  // - upload by farmer
+  // - cleanup
+  // - difference between these totals and overall total (to find missing overhead)
+  var start = process.hrtime();
+
   monitor.start(
     {
       delay: 3000, // interval in ms between monitor cycles
@@ -411,8 +424,17 @@ Uploader.prototype.start = function(finalCallback) {
     }
   ], function (err, filepath) {
     self._handleFailure();
+
+    var elapsed = process.hrtime(start)[1] / 1000000;
+    var precision = 3;
+    console.log('FILESIZE: %s', self.fileSize);
+    var fileSizeMb = self.fileSize / 1000;
+    var uploadRate = fileSizeMb / elapsed;
+    console.log("Transfer Rate: " + uploadRate.toFixed(precision) + " Mb/s - Elapsed Time: " + process.hrtime(start)[0] + " s, " + elapsed.toFixed(precision) + " ms");
+
     finalCallback(err, filepath);
   });
+
 
 };
 

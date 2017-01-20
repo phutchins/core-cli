@@ -224,6 +224,8 @@ Downloader.prototype.start = function(finalCallback) {
   var self = this;
   this.finalCallback = finalCallback;
 
+  var start = process.hrtime();
+
   async.waterfall([
     function _getInfo(callback) {
       self._getInfo(callback);
@@ -247,6 +249,11 @@ Downloader.prototype.start = function(finalCallback) {
         fs.unlinkSync(self.destination);
       }
     }
+    var elapsed = process.hrtime(start)[1] / 1000000;
+    var precision = 3;
+    var note = 'File download time';
+    console.log(process.hrtime(start)[0] + " s, " + elapsed.toFixed(precision) + " ms - " + note);
+
     finalCallback(err, filepath);
   });
 
