@@ -175,7 +175,7 @@ Uploader.prototype._checkFileExistence = function(filepath, callback) {
       var date = (new Date().toISOString()).replace(/:/g, ';');
       var newFilename = '(' + date + ')-' + filename;
       log(
-        'warn',
+        'debug',
         '[ %s ] Already exists in bucket. Uploading to ' + newFilename,
         filename
        );
